@@ -21,4 +21,9 @@ def make_move(state, action, tile):
                 state[i][action] = tile
                 return state
 
+def game_over(state):
+    return False
+
+def get_initial_state():
+    return False
 
