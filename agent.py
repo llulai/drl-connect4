@@ -1,6 +1,15 @@
 from environment import get_valid_moves, make_move, get_winner
 import random
 
+from collections import deque
+
+from keras.models import Sequential
+from keras.layers import Convolution2D
+from keras.layers.core import Activation, Flatten, Dense
+from keras.optimizers import Adam
+
+import numpy as np
+
 class Agent:
     """it is the most basic class for an agent
        it performs random actions"""
