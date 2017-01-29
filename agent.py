@@ -54,12 +54,13 @@ class IntelligentAgent(Agent):
 
         # otherwise take random action
         return super(IntelligentAgent, self).get_action(state)
-    
+
+
 class SuperAgent(Agent):
-    def __init__(self, tile, model=None, memory=10000):
+    def __init__(self, tile, model=None, memory=100, batch=5):
         self.tile = tile
         self.D = deque([], memory)
-        self.BATCH = 500
+        self.BATCH = batch
         
         if model:
             self.model = model
@@ -77,14 +78,19 @@ class SuperAgent(Agent):
             return super(SuperAgent, self).get_action(state)
     
     def parse_state(self, state):
-        try:
-            return np.array([np.reshape(state, (6,7,1)).transpose(2,0,1)])
-        except:
-            print(state)
+        return np.array([np.reshape(state, (6,7,1)).transpose(2,0,1)])
         
     def remembers(self, turns):
-        for turn in turns:
-            self.D.append(turn)
+        for i in range(len(turns)):
+            parsed_st = self.parse_state(turns[i]['st'])
+            if turns[i]['st_1']:
+                parsed_st_1 = self.parse_state(turns[i]['st_1'])
+                turns[i]['st_1'] = parsed_st_1
+            
+            turns[i]['st'] = parsed_st
+            
+            
+        self.D.append(turns)
     
     def get_model(self):
         print("Now we build the model")
@@ -106,29 +112,32 @@ class SuperAgent(Agent):
         return model
     
     def train(self):
-        minibatch = random.sample(self.D, self.BATCH)
+        games = random.sample(self.D, self.BATCH)
+        
+        for minibatch in games:
+            #minibatch = game[0]
 
-        inputs = np.zeros((self.BATCH, 1, 6, 7))   #32, 1, 6, 7
-        targets = np.zeros((inputs.shape[0], 7))                         #32, 7
+            inputs = np.zeros((len(minibatch), 1, 6, 7))   #32, 1, 6, 7
+            targets = np.zeros((inputs.shape[0], 7))                         #32, 7
 
-        #Now we do the experience replay
-        for i in range(0, len(minibatch)):
-            state_t = minibatch[i]['st']
-            action_t = minibatch[i]['action']   #This is action index
-            reward_t = minibatch[i]['reward']
-            state_t1 = minibatch[i]['st_1']
-            # if terminated, only equals reward
+            #Now we do the experience replay
+            for i in range(0, len(minibatch)):
+                state_t = minibatch[i]['st']
+                action_t = minibatch[i]['action']   #This is action index
+                reward_t = minibatch[i]['reward']
+                state_t1 = minibatch[i]['st_1']
+                # if terminated, only equals reward
 
-            inputs[i:i + 1] = self.parse_state(state_t)    #I saved down s_t
+                inputs[i:i + 1] = state_t    #I saved down s_t
 
-            targets[i] = self.model.predict(self.parse_state(state_t))  # Hitting each buttom probability
+                targets[i] = self.model.predict(state_t)  # Hitting each buttom probability
 
-            if not state_t1:
-                targets[i, action_t] = reward_t
-            else:
-                q_sa = self.model.predict(self.parse_state(state_t1))
-                targets[i, action_t] = reward_t + 0.9 * np.max(q_sa)
+                if state_t1 == None:
+                    targets[i, action_t] = reward_t
+                else:
+                    q_sa = self.model.predict(state_t1)
+                    targets[i, action_t] = reward_t + 0.9 * np.max(q_sa)
 
-            self.model.train_on_batch(inputs, targets)
+                self.model.train_on_batch(inputs, targets)
 
 

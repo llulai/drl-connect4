@@ -21,7 +21,7 @@ def get_winner(state, tiles):
         # check horizontal
         for x in range(width - 3):
             for y in range(height):
-               if state[y][x] == state[y][x+1] == state[y][x+2] == state[y][x+3] == tile:
+                if state[y][x] == state[y][x+1] == state[y][x+2] == state[y][x+3] == tile:
                     return tile
 
         # check vertical
