@@ -1,9 +1,10 @@
 from copy import deepcopy
 
+
 def get_valid_moves(state):
-    """it returns a list with the indexes of the colums
+    """it returns a list with the indexes of the columns
        where it is possible to make a move
-       @state: 2D list (default 6 rows and 7 colums)"""
+       @state: 2D list (default 6 rows and 7 columns)"""
     
     valid_moves = [] 
     # check every cell in the top row
@@ -13,10 +14,11 @@ def get_valid_moves(state):
 
     return valid_moves
 
+
 def get_not_valid_moves(state):
-    """it returns a list with the indexes of the colums
+    """it returns a list with the indexes of the columns
        where it is possible to make a move
-       @state: 2D list (default 6 rows and 7 colums)"""
+       @state: 2D list (default 6 rows and 7 columns)"""
     
     not_valid_moves = [] 
     # check every cell in the top row
@@ -25,6 +27,7 @@ def get_not_valid_moves(state):
             not_valid_moves.append(i)
 
     return not_valid_moves
+
 
 def get_winner(state, tiles):
     height = len(state)
@@ -57,6 +60,7 @@ def get_winner(state, tiles):
     
     return 0
 
+
 def make_move(state, action, tile):
     new_state = deepcopy(state)
     if new_state[0][action] == 0:
@@ -65,8 +69,10 @@ def make_move(state, action, tile):
                 new_state[i][action] = tile
                 return new_state
 
+
 def game_over(state, tiles):
     return get_winner(state, tiles) or not get_valid_moves(state)
+
 
 def get_initial_state():
     return [[0 for _ in range(7)] for __ in range(6)]

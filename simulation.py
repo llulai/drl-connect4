@@ -1,11 +1,10 @@
 from agent import Agent
 from itertools import cycle
 from environment import get_initial_state, game_over, make_move, get_winner
-from random import shuffle, randrange
-from functools import reduce
+from random import randrange
 
 
-def simulate(agents=[None, None], sample=10, tiles=[1,2], gamma=0.9):
+def simulate(agents=[None, None], iterations=10, tiles=[1, 2], gamma=0.9):
     
     # if the agents are not passed
     # create dumb agents
@@ -21,8 +20,8 @@ def simulate(agents=[None, None], sample=10, tiles=[1,2], gamma=0.9):
     # initialize list to return
     results = []
 
-    # run n sumulations
-    for _ in range(sample):
+    # run n simulations
+    for iteration in range(iterations):
 
         # get an empty board
         state = get_initial_state()
@@ -38,7 +37,7 @@ def simulate(agents=[None, None], sample=10, tiles=[1,2], gamma=0.9):
         while not game_over(state, tiles):
 
             # initial state for this turn to string
-            initial_state = ''.join(reduce(lambda x, y: x + y, [list(map(str, i)) for i in state]))
+            initial_state = state
             
             # change current player
             current_player = next(agents)
@@ -54,35 +53,35 @@ def simulate(agents=[None, None], sample=10, tiles=[1,2], gamma=0.9):
             if current_player.get_tile() == 1:
                 step = (initial_state, action)
                 current_game.append(step)
-       
-        
-        # clean results for game
-        clean_game = []
-        winner = get_winner(state, tiles)
-        turns = len(current_game)
 
-        if winner == 1:
-            reward = 1
-        elif winner == 2:
-            reward = -1
-        else:
-            reward = 0
-        
-        for i, step in enumerate(current_game):
-            
-            clean_step = {}
-            clean_step['st'] = step[0]
-            clean_step['action'] = step[1]
-            clean_step['reward'] = gamma ** (turns - i - 1) * reward
-
-            try:
-                clean_step['st_1'] = current_game[i+1][0]
-            except:
-                clean_step['st_1'] = None
-            
-            clean_game.append(clean_step)
-
+        # parse game
+        clean_game = parse_game(current_game, state, gamma, tiles)
         # add the last game to the results list
         results.append(clean_game)
 
     return results
+
+
+def parse_game(current_game, last_state, gamma, tiles):
+    # clean results for game
+    clean_game = []
+
+    turns = len(current_game)
+    reward = get_winner(last_state, tiles)
+
+    for i, step in enumerate(current_game):
+
+        clean_step = {
+            'st': step[0],
+            'action': step[1],
+            'reward': gamma ** (turns - i - 1) * reward
+        }
+
+        try:
+            clean_step['st_1'] = current_game[i + 1][0]
+        except IndexError:
+            clean_step['st_1'] = None
+
+        clean_game.append(clean_step)
+
+    return clean_game
