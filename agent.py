@@ -15,6 +15,7 @@ class Agent:
        it performs random actions"""
     def __init__(self, tile=None):
         self.tile = tile
+        self.learns = False
 
     def get_action(self, state):
         return random.choice(get_valid_moves(state))
@@ -70,6 +71,8 @@ class IntelligentAgent(Agent):
 class SuperAgent(Agent):
     def __init__(self, tile, model=None, memory=100, batch_size=5):
         super(SuperAgent, self).__init__(tile=tile)
+
+        self.learns = True
 
         # initialize memory of the agent
         self.D = deque([], memory)
@@ -143,7 +146,6 @@ class SuperAgent(Agent):
         self.D.append(turns)
 
     def get_model(self):
-        print("Now we build the model")
         model = Sequential()
         model.add(Dense(1024, input_shape=(1764,)))
         model.add(Activation('relu'))
@@ -155,7 +157,6 @@ class SuperAgent(Agent):
 
         adam = Adam(lr=0.01)
         model.compile(loss='mse', optimizer=adam)
-        print("We finish building the model")
         return model
 
     def train(self):

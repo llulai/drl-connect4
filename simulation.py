@@ -4,7 +4,7 @@ from environment import get_initial_state, game_over, make_move, get_winner
 from random import randrange
 
 
-def simulate(agents=[None, None], iterations=10, tiles=[1, 2], gamma=0.9):
+def simulate(agents=[None, None], iterations=10, tiles=[1, -1], gamma=0.9, log=True, learn_after=5, train=False, backup=False):
     
     # if the agents are not passed
     # create dumb agents
@@ -15,13 +15,16 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, 2], gamma=0.9):
             agents[i].set_tile(tiles[i])
 
     # create an iterator for alternate players
-    agents = cycle(agents)
+    players = cycle(agents)
 
     # initialize list to return
     results = []
+    won = 0
+    total_reward = 0
 
     # run n simulations
-    for iteration in range(iterations):
+    for iteration in range(1, iterations):
+        print('iteration ' + str(iteration) + ' of ' + str(iterations))
 
         # get an empty board
         state = get_initial_state()
@@ -31,7 +34,7 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, 2], gamma=0.9):
 
         # randomize the first agent to play
         for _ in range(randrange(2)):
-            current_player = next(agents)
+            current_player = next(players)
         
         # play until the game is over
         while not game_over(state, tiles):
@@ -40,7 +43,7 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, 2], gamma=0.9):
             initial_state = state
             
             # change current player
-            current_player = next(agents)
+            current_player = next(players)
 
             # ask the agent to give an action
             action = current_player.get_action(state)
@@ -58,6 +61,36 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, 2], gamma=0.9):
         clean_game = parse_game(current_game, state, gamma, tiles)
         # add the last game to the results list
         results.append(clean_game)
+
+        for agent in agents:
+            if agent.learns:
+                agent.remembers(clean_game)
+
+        if train and iteration > learn_after:
+
+            for agent in agents:
+                if agent.learns:
+                    agent.train()
+
+
+        if log:
+            reward = get_winner(state, tiles)
+            total_reward += reward
+            if reward > 0:
+                won += 1
+
+            if iteration % 10 == 0:
+                print('won ' + str(won) + ' out of 10 games')
+                print('reward: ' + str(total_reward))
+
+                total_reward = 0
+                won = 0
+
+            if backup:
+                for agent in agents:
+                    if agent.learns:
+                        agent.model.save('backup_model')
+
 
     return results
 
