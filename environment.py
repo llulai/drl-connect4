@@ -13,6 +13,19 @@ def get_valid_moves(state):
 
     return valid_moves
 
+def get_not_valid_moves(state):
+    """it returns a list with the indexes of the colums
+       where it is possible to make a move
+       @state: 2D list (default 6 rows and 7 colums)"""
+    
+    not_valid_moves = [] 
+    # check every cell in the top row
+    for i, cell in enumerate(state[0]):
+        if cell != 0:
+            not_valid_moves.append(i)
+
+    return not_valid_moves
+
 def get_winner(state, tiles):
     height = len(state)
     width = len(state[0])

@@ -1,4 +1,4 @@
-from environment import get_valid_moves, make_move, get_winner
+from environment import get_valid_moves, make_move, get_winner, get_not_valid_moves
 import random
 
 from collections import deque
@@ -69,25 +69,40 @@ class SuperAgent(Agent):
 
     def get_action(self, state):
         parsed_state = self.parse_state(state)
-        predicted_move = self.model.predict(parsed_state).argmax()
+        predicted_moves = self.model.predict(parsed_state).argsort()
         valid_moves = get_valid_moves(state)
         
-        if predicted_move in valid_moves:
-            return predicted_move
-        else:
-            return super(SuperAgent, self).get_action(state)
+        if random.random() < 0.1:
+            return random.choice(valid_moves)
+        
+        for i in range(7):
+            tempted_move = np.where(predicted_moves[0]==i)[0][0]
+            if tempted_move in valid_moves:
+                return tempted_move
+        
+        return super(SuperAgent, self).get_action(state)
     
     def parse_state(self, state):
-        return np.array([np.reshape(state, (6,7,1)).transpose(2,0,1)])
+        flat_state = np.reshape(state, -1)
+
+        for i in range(42):
+            for j in range(42):
+                if  i != j:
+                    mult = flat_state[i] * flat_state[j]
+                    flat_state.append(mult)
+
+        return flat_state
         
     def remembers(self, turns):
         for i in range(len(turns)):
             parsed_st = self.parse_state(turns[i]['st'])
             if turns[i]['st_1']:
                 parsed_st_1 = self.parse_state(turns[i]['st_1'])
-                turns[i]['st_1'] = parsed_st_1
+                turns[i]['pst_1'] = parsed_st_1
+            else:
+                turns[i]['pst_1'] = None
             
-            turns[i]['st'] = parsed_st
+            turns[i]['pst'] = parsed_st
             
             
         self.D.append(turns)
@@ -95,14 +110,11 @@ class SuperAgent(Agent):
     def get_model(self):
         print("Now we build the model")
         model = Sequential()
-        model.add(Convolution2D(32, 3, 3, subsample=(4,4), border_mode='same',input_shape=(1, 6, 7)))
+        model.add(Dense(1024, input_shape=(1764, )))
         model.add(Activation('relu'))
-        model.add(Convolution2D(64, 4, 4, subsample=(2,2), border_mode='same'))
-        model.add(Activation('relu'))
-        model.add(Convolution2D(64, 3, 3, subsample=(1,1), border_mode='same'))
-        model.add(Activation('relu'))
-        model.add(Flatten())
         model.add(Dense(512))
+        model.add(Activation('relu'))
+        model.add(Dense(256))
         model.add(Activation('relu'))
         model.add(Dense(7))
 
@@ -114,30 +126,52 @@ class SuperAgent(Agent):
     def train(self):
         games = random.sample(self.D, self.BATCH)
         
-        for minibatch in games:
+        all_inputs = []
+        all_targets = []
+        
+        for game in games:
             #minibatch = game[0]
+            
+            turns = len(game)
 
-            inputs = np.zeros((len(minibatch), 1, 6, 7))   #32, 1, 6, 7
-            targets = np.zeros((inputs.shape[0], 7))                         #32, 7
+            inputs = np.zeros((turns, 1, 6, 7))         #turns, pixels, rows, columns
+            targets = np.zeros((turns, 7))    #turns, actions
 
             #Now we do the experience replay
-            for i in range(0, len(minibatch)):
-                state_t = minibatch[i]['st']
-                action_t = minibatch[i]['action']   #This is action index
-                reward_t = minibatch[i]['reward']
-                state_t1 = minibatch[i]['st_1']
+            for i, turn in enumerate(game):
+                state_t = turn['pst']
+                action_t = turn['action']   #This is action index
+                reward_t = turn['reward']
+                state_t1 = turn['pst_1']
+                
+                raw_state = turn['st']
                 # if terminated, only equals reward
 
                 inputs[i:i + 1] = state_t    #I saved down s_t
 
                 targets[i] = self.model.predict(state_t)  # Hitting each buttom probability
+                
+                #punish not valid actions
+                not_valid_moves = get_not_valid_moves(raw_state)
+                
+                for not_valid_action in not_valid_moves:
+                    targets[i, not_valid_action] = -10
 
                 if state_t1 == None:
                     targets[i, action_t] = reward_t
+                    
                 else:
                     q_sa = self.model.predict(state_t1)
                     targets[i, action_t] = reward_t + 0.9 * np.max(q_sa)
-
-                self.model.train_on_batch(inputs, targets)
+            
+            all_inputs.extend(inputs)
+            all_targets.extend(targets)
+        
+        all_inputs = np.array(all_inputs)
+        all_targets = np.array(all_targets)
+        
+        self.model.train_on_batch(all_inputs, all_targets)
+        
+        return (all_inputs, all_targets)
 
 
