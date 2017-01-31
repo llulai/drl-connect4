@@ -2,9 +2,12 @@ from copy import deepcopy
 
 
 def get_valid_moves(state):
-    """it returns a list with the indexes of the columns
+    """
+    it returns a list with the indexes of the columns
        where it is possible to make a move
-       @state: 2D list (default 6 rows and 7 columns)"""
+    :param state: 2D list (default 6 rows and 7 columns)
+    :return: (list) with indexes where it is possible to put a tile
+    """
     
     valid_moves = [] 
     # check every cell in the top row
@@ -16,9 +19,12 @@ def get_valid_moves(state):
 
 
 def get_not_valid_moves(state):
-    """it returns a list with the indexes of the columns
-       where it is possible to make a move
-       @state: 2D list (default 6 rows and 7 columns)"""
+    """
+    it returns a list with the indexes of the columns
+       where it is not possible to make a move
+    :param state: 2D list (default 6 rows and 7 columns)
+    :return: (list) with indexes where it is not possible to put a tile
+    """
     
     not_valid_moves = [] 
     # check every cell in the top row
@@ -30,6 +36,11 @@ def get_not_valid_moves(state):
 
 
 def get_winner(state, tiles):
+    """
+    :param state: 2D list (default 6 rows and 7 columns)
+    :param tiles: list holding the different players tiles
+    :return: returns the tile of the winner or 0 in case there is no winner
+    """
     height = len(state)
     width = len(state[0])
     
@@ -62,6 +73,12 @@ def get_winner(state, tiles):
 
 
 def make_move(state, action, tile):
+    """
+    :param state: 2D list (default 6 rows and 7 columns)
+    :param action: (int) index of the column where to put the tile
+    :param tile:  (int) tile to put
+    :return: state after taking the action
+    """
     new_state = deepcopy(state)
     if new_state[0][action] == 0:
         for i in reversed(range(len(new_state))):
@@ -71,23 +88,17 @@ def make_move(state, action, tile):
 
 
 def game_over(state, tiles):
+    """
+    checks whether there are any valid moves left or if there is a winner
+    :param state: 2D list (default 6 rows and 7 columns)
+    :param tiles: list holding the different players tiles
+    :return: True if the game is over, False otherwise
+    """
     return get_winner(state, tiles) or not get_valid_moves(state)
 
 
 def get_initial_state():
+    """
+    :return: a 6x7 list filled with 0
+    """
     return [[0 for _ in range(7)] for __ in range(6)]
-
-
-class Environment:
-    def __init__(self):
-        self.state = get_initial_state()
-
-    def start(self):
-        self.state = get_initial_state()
-
-    def make_move(self, action, tile):
-        # check if it is valid first
-        self.state = make_move(self.state, action, tile)
-
-    def over(self, tiles):
-        return game_over(self.state, tiles)

@@ -1,23 +1,29 @@
-from environment import get_valid_moves, make_move, get_winner, get_not_valid_moves
+import numpy as np
 import random
 
 from collections import deque
-
+from environment import get_valid_moves, make_move, get_winner, get_not_valid_moves
 from keras.models import Sequential
 from keras.layers.core import Activation, Dense
 from keras.optimizers import Adam
-
-import numpy as np
 
 
 class Agent:
     """it is the most basic class for an agent
        it performs random actions"""
     def __init__(self, tile=None):
+        """
+
+        :param tile (int): Tile to be used by the agent when playing the game
+        """
         self.tile = tile
         self.learns = False
 
     def get_action(self, state):
+        """
+        :param state (list): 6x7 list representing the current state of the game
+        :return int: Index of the column to put the piece (always checks for valid moves)
+        """
         return random.choice(get_valid_moves(state))
     
     def get_tile(self):
@@ -34,6 +40,11 @@ class IntelligentAgent(Agent):
        3- take random action"""
 
     def __init__(self, tile=None, opponent_tile=None):
+        """
+
+        :param tile (int): Tile to be used by the agent when playing the game
+        :param opponent_tile: Tile used by the opponent agent when playing the game
+        """
         # call parent init
         super(IntelligentAgent, self).__init__(tile=tile)
 
@@ -42,7 +53,10 @@ class IntelligentAgent(Agent):
             self.opponent_tile = opponent_tile
 
     def get_action(self, state):
-        """returns the optimal action for the given state"""
+        """
+        :param state : (list) 6x7 list representing the current state of the game
+        :return int: Index of the column to put the piece (always checks for valid moves)
+        """
 
         # get all possible moves
         possible_actions = get_valid_moves(state)
@@ -70,6 +84,12 @@ class IntelligentAgent(Agent):
 
 class SuperAgent(Agent):
     def __init__(self, tile, model=None, memory=100, batch_size=5):
+        """
+        :param tile: Tile to be used by the agent when playing the game
+        :param model: keras model to be used, None by default
+        :param memory: (int) How many games store in replay memory
+        :param batch_size: (int) How many games to be used as training batches
+        """
         super(SuperAgent, self).__init__(tile=tile)
 
         self.learns = True
@@ -89,6 +109,10 @@ class SuperAgent(Agent):
             self.model = self.get_model()
 
     def get_action(self, state):
+        """
+        :param state : (6x7 list) list representing the current state of the game
+        :return int: Index of the column to put the piece (always checks for valid moves)
+        """
         # parse the given state
         parsed_state = self.parse_state(state)
 
@@ -112,6 +136,10 @@ class SuperAgent(Agent):
                 return tempted_move
 
     def parse_state(self, state):
+        """
+        :param state: (6x7 list) representing the state of the game
+        :return: list 1x1764 list with flatten 42 cells (6x7) and appended x1*x1, x1*x2 ... x_n-1*x_n
+        """
         # flatten the array
         flat_state = list(np.reshape(state, -1))
 
@@ -126,6 +154,9 @@ class SuperAgent(Agent):
         return np.array([flat_state])
 
     def remembers(self, turns):
+        """Appends the given game in memory for training
+        :param turns: dict with 'st': current state, 'st_1': next state (None if terminal state), 'action' and 'reward' keys
+        """
         # iterate over each turn in the game
         for i in range(len(turns)):
             # parse the current state
@@ -146,6 +177,9 @@ class SuperAgent(Agent):
         self.D.append(turns)
 
     def get_model(self):
+        """
+        :return: Keras model to be used to make decisions
+        """
         model = Sequential()
         model.add(Dense(1024, input_shape=(1764,)))
         model.add(Activation('relu'))
@@ -160,6 +194,8 @@ class SuperAgent(Agent):
         return model
 
     def train(self):
+        """Trains the agent's model
+        """
         # get random sample from memory
         games = random.sample(self.D, self.batch_size)
 
