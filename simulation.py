@@ -2,9 +2,10 @@ from agent import Agent
 from itertools import cycle
 from environment import get_initial_state, game_over, make_move, get_winner
 from random import randrange
+import pickle
 
 
-def simulate(agents=[None, None], iterations=10, tiles=[1, -1], gamma=0.9, log=True, learn_after=5, train=False, backup=False):
+def simulate(agents=[None, None], iterations=10, tiles=[1, -1], gamma=0.9, log=True, learn_after=5, train=False, backup=False, print_every=10):
     
     # if the agents are not passed
     # create dumb agents
@@ -23,8 +24,8 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], gamma=0.9, log=T
     total_reward = 0
 
     # run n simulations
-    for iteration in range(1, iterations):
-        print('iteration ' + str(iteration) + ' of ' + str(iterations))
+    for iteration in range(1, iterations + 1):
+        # print('iteration ' + str(iteration) + ' of ' + str(iterations))
 
         # get an empty board
         state = get_initial_state()
@@ -53,25 +54,16 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], gamma=0.9, log=T
             
             # if the current player is agent 1
             # add the current turn to the list
-            if current_player.get_tile() == 1:
-                step = (initial_state, action)
-                current_game.append(step)
+            current_game.append(initial_state)
 
-        # parse game
-        clean_game = parse_game(current_game, state, gamma, tiles)
+        current_game.append(state)
+
         # add the last game to the results list
-        results.append(clean_game)
+        results.append(current_game)
 
         for agent in agents:
             if agent.learns:
-                agent.remembers(clean_game)
-
-        if train and iteration > learn_after:
-
-            for agent in agents:
-                if agent.learns:
-                    agent.train()
-
+                agent.learn(current_game)
 
         if log:
             reward = get_winner(state, tiles)
@@ -79,20 +71,27 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], gamma=0.9, log=T
             if reward > 0:
                 won += 1
 
-            if iteration % 10 == 0:
-                print('won ' + str(won) + ' out of 10 games')
+            if iteration % print_every == 0:
+                print('won ' + str(won) + ' out of ' + str(print_every) + ' games')
                 print('reward: ' + str(total_reward))
 
                 total_reward = 0
                 won = 0
 
-            if backup:
-                for agent in agents:
-                    if agent.learns:
-                        agent.model.save('backup_model')
+            if backup and iteration % print_every == 0:
+                save_q(agents[0])
+
+    return agents[0], results
 
 
-    return results
+def save_q(agent):
+    pickle_file = 'learning_agent.pickle'
+
+    dataset = {'learningagent': agent.Q}
+
+    with open(pickle_file, 'wb') as picklefile:
+        pickle.dump(dataset, picklefile, pickle.HIGHEST_PROTOCOL)
+    picklefile.close()
 
 
 def parse_game(current_game, last_state, gamma, tiles):
@@ -110,10 +109,10 @@ def parse_game(current_game, last_state, gamma, tiles):
             'reward': gamma ** (turns - i - 1) * reward
         }
 
-        try:
-            clean_step['st_1'] = current_game[i + 1][0]
-        except IndexError:
-            clean_step['st_1'] = None
+#        try:
+#            clean_step['st_1'] = current_game[i + 1][0]
+#        except IndexError:
+#            clean_step['st_1'] = None
 
         clean_game.append(clean_step)
 

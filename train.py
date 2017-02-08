@@ -1,6 +1,20 @@
-from agent import IntelligentAgent, SuperAgent
+from agent import IntelligentAgent, LearningAgent
 from simulation import simulate
+import pickle
 
 
-agents = [SuperAgent(tile=1, memory=100, batch_size=20), IntelligentAgent(-1, 1)]
-simulate(agents=agents, iterations=1000, learn_after=25, log=True, train=True)
+def load_q():
+    pickle_file = 'learning_agent.pickle'
+    with open(pickle_file, 'rb') as f:
+        save = pickle.load(f)
+        q = save['learningagent']
+        del save
+    return q
+
+
+agents = [LearningAgent(1), IntelligentAgent(-1, 1)]
+
+agents = [LearningAgent(1), IntelligentAgent(-1, 1)]
+#agents[0].Q = load_q()
+
+simulate(agents=agents, iterations=100, log=True, train=True, print_every=10, backup=True)

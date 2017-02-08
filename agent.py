@@ -1,11 +1,10 @@
 import numpy as np
 import random
+from environment import get_valid_moves, make_move, get_winner
 
-from collections import deque
-from environment import get_valid_moves, make_move, get_winner, get_not_valid_moves
-from keras.models import Sequential
-from keras.layers.core import Activation, Dense
-from keras.optimizers import Adam
+
+def parse_state(state):
+    return ''.join(map(str, list(np.array(state).flatten())))
 
 
 class Agent:
@@ -13,7 +12,6 @@ class Agent:
        it performs random actions"""
     def __init__(self, tile=None):
         """
-
         :param tile (int): Tile to be used by the agent when playing the game
         """
         self.tile = tile
@@ -21,7 +19,7 @@ class Agent:
 
     def get_action(self, state):
         """
-        :param state (list): 6x7 list representing the current state of the game
+        :param state: 6x7 list representing the current state of the game
         :return int: Index of the column to put the piece (always checks for valid moves)
         """
         return random.choice(get_valid_moves(state))
@@ -46,7 +44,7 @@ class IntelligentAgent(Agent):
         :param opponent_tile: Tile used by the opponent agent when playing the game
         """
         # call parent init
-        super(IntelligentAgent, self).__init__(tile=tile)
+        Agent.__init__(self, tile=tile)
 
         # set the opponent tile
         if opponent_tile:
@@ -79,178 +77,63 @@ class IntelligentAgent(Agent):
                 return action
 
         # otherwise take random action
-        return super(IntelligentAgent, self).get_action(state)
+        return Agent.get_action(self, state)
 
 
-class SuperAgent(Agent):
-    def __init__(self, tile, model=None, memory=100, batch_size=5):
-        """
-        :param tile: Tile to be used by the agent when playing the game
-        :param model: keras model to be used, None by default
-        :param memory: (int) How many games store in replay memory
-        :param batch_size: (int) How many games to be used as training batches
-        """
-        super(SuperAgent, self).__init__(tile=tile)
-
+class LearningAgent(Agent):
+    def __init__(self, tile=None):
+        Agent.__init__(self, tile)
+        self.Q = {}
+        self.alpha = 0.5
         self.learns = True
 
-        # initialize memory of the agent
-        self.D = deque([], memory)
+    def learn(self, turns):
 
-        # set the sample size for the experience replay
-        self.batch_size = batch_size
+        for i in range(1, len(turns)):
 
-        # if a model is given, use that one
-        if model:
-            self.model = model
+            previous_state = turns[i-1]
+            current_state = turns[i]
 
-        # otherwise use default model
-        else:
-            self.model = self.get_model()
+            self.add_state(previous_state)
+            self.add_state(current_state)
+
+            parsed_previous_state = parse_state(previous_state)
+            parsed_current_state = parse_state(current_state)
+
+            old_q = self.Q[parsed_previous_state]
+
+            current_value = self.Q[parsed_current_state]
+
+            self.Q[parsed_previous_state] = old_q + self.alpha * (current_value - old_q)
 
     def get_action(self, state):
-        """
-        :param state : (6x7 list) list representing the current state of the game
-        :return int: Index of the column to put the piece (always checks for valid moves)
-        """
-        # parse the given state
-        parsed_state = self.parse_state(state)
-
-        # get the priority for each move
-        predicted_moves = self.model.predict(parsed_state).argsort()
-
-        # get a list of valid moves
         valid_moves = get_valid_moves(state)
 
-        # greedy exploration
         if random.random() < 0.1:
-            return random.choice(valid_moves)
+            return Agent.get_action(self, state)
 
-        # take the best option available
-        for i in range(7):
-            # get the index of the tempted move
-            tempted_move = np.where(predicted_moves[0] == i)[0][0]
-            # if the top priority move is among valid moves
-            if tempted_move in valid_moves:
-                # take this move
-                return tempted_move
+        self.add_state(state)
 
-    def parse_state(self, state):
-        """
-        :param state: (6x7 list) representing the state of the game
-        :return: list 1x1764 list with flatten 42 cells (6x7) and appended x1*x1, x1*x2 ... x_n-1*x_n
-        """
-        # flatten the array
-        flat_state = list(np.reshape(state, -1))
+        max_move = None
+        max_value = None
+        for move in valid_moves:
+            simulated_state = make_move(state, move, self.tile)
+            self.add_state(simulated_state)
+            parsed_simulated_state = parse_state(simulated_state)
+            state_value = self.Q[parsed_simulated_state]
+            if state_value > max_value:
+                max_value = state_value
+                max_move = move
 
-        # add the multiplication among each variable
-        for i in range(42):
-            for j in range(42):
-                if i != j:
-                    product = flat_state[i] * flat_state[j]
-                    flat_state.append(product)
+        return max_move
 
-        # return the new array
-        return np.array([flat_state])
-
-    def remembers(self, turns):
-        """Appends the given game in memory for training
-        :param turns: dict with 'st': current state, 'st_1': next state (None if terminal state), 'action' and 'reward' keys
-        """
-        # iterate over each turn in the game
-        for i in range(len(turns)):
-            # parse the current state
-            parsed_st = self.parse_state(turns[i]['st'])
-            turns[i]['pst'] = parsed_st
-
-            # if it is not terminal state
-            if turns[i]['st_1']:
-                # parse next state
-                parsed_st_1 = self.parse_state(turns[i]['st_1'])
-                turns[i]['pst_1'] = parsed_st_1
-            # if it is terminal state
-            else:
-                # don't parse it
-                turns[i]['pst_1'] = None
-
-        # append the game to the memory
-        self.D.append(turns)
-
-    def get_model(self):
-        """
-        :return: Keras model to be used to make decisions
-        """
-        model = Sequential()
-        model.add(Dense(1024, input_shape=(1764,)))
-        model.add(Activation('relu'))
-        model.add(Dense(512))
-        model.add(Activation('relu'))
-        model.add(Dense(256))
-        model.add(Activation('relu'))
-        model.add(Dense(7))
-
-        adam = Adam(lr=0.01)
-        model.compile(loss='mse', optimizer=adam)
-        return model
-
-    def train(self):
-        """Trains the agent's model
-        """
-        # get random sample from memory
-        games = random.sample(self.D, self.batch_size)
-
-        # initialize inputs and targets lists
-        all_inputs = []
-        all_targets = []
-
-        # iterate every game
-        for game in games:
-
-            # get how many turns there were in the game
-            turns = len(game)
-
-            # initialize inputs and targets lists for the game
-            inputs = np.zeros((turns, 1764))  # turns, flat_grid
-            targets = np.zeros((turns, 7))  # turns, actions
-
-            # parse each turn
-            for i, turn in enumerate(game):
-                state_t = turn['pst']      # parsed state
-                action_t = turn['action']  # action index
-                reward_t = turn['reward']  # observed reward
-                state_t1 = turn['pst_1']   # next state (None if terminal state)
-                raw_state = turn['st']     # not parsed state (used for punish not valid actions
-
-                inputs[i:i + 1] = state_t  # put the state in the inputs array
-
-                # get the predicted reward for each action in the current state
-                targets[i] = self.model.predict(state_t)
-
-                # punish not valid actions
-                not_valid_moves = get_not_valid_moves(raw_state)
-
-                for not_valid_action in not_valid_moves:
-                    targets[i, not_valid_action] = -10
-
-                # if it is a terminal state
-                if state_t1 == None:
-                    # set the reward for taking action_t as the observed value
-                    targets[i, action_t] = reward_t
-
-                # if it is not a terminal state
-                else:
-                    # get the predicted reward for each action for the next state
-                    q_sa = self.model.predict(state_t1)
-                    # set the reward as the observed reward plus the max predicted reward of the next state
-                    targets[i, action_t] = reward_t + 0.9 * np.max(q_sa)
-
-            # add input and targets of the current game
-            all_inputs.extend(inputs)
-            all_targets.extend(targets)
-
-        # cast inputs and targets as numpy arrays
-        all_inputs = np.array(all_inputs)
-        all_targets = np.array(all_targets)
-
-        # perform gradient step
-        self.model.train_on_batch(all_inputs, all_targets)
+    def add_state(self, state):
+        parsed_state = parse_state(state)
+        if parsed_state not in self.Q.keys():
+            winner = get_winner(state, [1, -1])
+            if winner == 1:
+                self.Q[parsed_state] = 1
+            elif winner == 0:
+                self.Q[parsed_state] = 0.5
+            elif winner == -1:
+                self.Q[parsed_state] = 0
