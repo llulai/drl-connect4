@@ -35,7 +35,7 @@ def get_not_valid_moves(state):
     return not_valid_moves
 
 
-def get_winner(state, tiles):
+def get_winner(state, tiles=None):
     """
     :param state: 2D list (default 6 rows and 7 columns)
     :param tiles: list holding the different players tiles
