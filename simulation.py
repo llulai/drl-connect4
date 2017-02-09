@@ -5,7 +5,7 @@ from random import randrange
 import pickle
 
 
-def simulate(agents=[None, None], iterations=10, tiles=[1, -1], gamma=0.9, log=True, learn_after=5, train=False, backup=False, print_every=10):
+def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup=False, print_every=10):
     
     # if the agents are not passed
     # create dumb agents
@@ -21,6 +21,7 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], gamma=0.9, log=T
     # initialize list to return
     results = []
     won = 0
+    games_started = 0
     total_reward = 0
 
     # run n simulations
@@ -34,10 +35,13 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], gamma=0.9, log=T
         current_game = []
 
         # randomize the first agent to play
-        for _ in range(randrange(2)):
+        for _ in range(randrange(1, 3)):
             current_player = next(players)
         
         # play until the game is over
+
+        played_first =  current_player.tile == 1
+
         while not game_over(state, tiles):
 
             # initial state for this turn to string
@@ -68,11 +72,12 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], gamma=0.9, log=T
         if log:
             reward = get_winner(state, tiles)
             total_reward += reward
-            if reward > 0:
+            if reward > 0 and played_first:
                 won += 1
+            games_started += 1 if played_first else 0
 
             if iteration % print_every == 0:
-                print('won ' + str(won) + ' out of ' + str(print_every) + ' games')
+                print('won ' + str(won) + ' out of ' + str(games_started) + ' games')
                 print('reward: ' + str(total_reward))
 
                 total_reward = 0

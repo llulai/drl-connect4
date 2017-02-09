@@ -12,9 +12,11 @@ def load_q():
     return q
 
 
-agents = [LearningAgent(1), IntelligentAgent(-1, 1)]
+def main():
+    agents = [LearningAgent(1), IntelligentAgent(-1, 1)]
+    #agents[0].Q = load_q()
 
-agents = [LearningAgent(1), IntelligentAgent(-1, 1)]
-#agents[0].Q = load_q()
+    simulate(agents=agents, iterations=1000, log=True, train=True, print_every=100, backup=True)
 
-simulate(agents=agents, iterations=100, log=True, train=True, print_every=10, backup=True)
+if __name__ == '__main__':
+    main()

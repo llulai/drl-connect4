@@ -44,30 +44,30 @@ def get_winner(state, tiles):
     height = len(state)
     width = len(state[0])
     
-    for tile in tiles:
-        # check horizontal
-        for x in range(width - 3):
-            for y in range(height):
-                if state[y][x] == state[y][x+1] == state[y][x+2] == state[y][x+3] == tile:
-                    return tile
+    #for tile in tiles:
+    # check horizontal
+    for x in range(width - 3):
+        for y in range(height):
+            if state[y][x] == state[y][x+1] == state[y][x+2] == state[y][x+3]:
+                return state[y][x]
 
-        # check vertical
-        for x in range(width):
-            for y in range(height - 3):
-                if state[y][x] == state[y+1][x] == state[y+2][x] == state[y+3][x] == tile:
-                    return tile
+    # check vertical
+    for x in range(width):
+        for y in range(height - 3):
+            if state[y][x] == state[y+1][x] == state[y+2][x] == state[y+3][x]:
+                return state[y][x]
 
-        # check / diagonal
-        for x in range(width - 3):
-            for y in range(height - 3):
-                if state[y][x] == state[y+1][x+1] == state[y+2][x+2] == state[y+3][x+3] == tile:
-                    return tile
+    # check / diagonal
+    for x in range(width - 3):
+        for y in range(height - 3):
+            if state[y][x] == state[y+1][x+1] == state[y+2][x+2] == state[y+3][x+3]:
+                return state[y][x]
 
-        # check \ diagonal
-        for x in range(3, width - 3):
-            for y in range(height - 3):
-                if state[y][x] == state[y+1][x-1] == state[y+2][x-2] == state[y+3][x-3] == tile:
-                    return tile
+    # check \ diagonal
+    for x in range(3, width - 3):
+        for y in range(height - 3):
+            if state[y][x] == state[y+1][x-1] == state[y+2][x-2] == state[y+3][x-3]:
+                return state[y][x]
     
     return 0
 

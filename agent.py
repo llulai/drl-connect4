@@ -81,36 +81,31 @@ class IntelligentAgent(Agent):
 
 
 class LearningAgent(Agent):
-    def __init__(self, tile=None):
+    def __init__(self, tile=None, alpha=0.5, gamma=0.9):
         Agent.__init__(self, tile)
         self.Q = {}
-        self.alpha = 0.5
+        self.alpha = alpha
         self.learns = True
+        self.added_states = 0
+        self.gamma = gamma
 
     def learn(self, turns):
+        parsed_states = []
+        for turn in turns:
+            parsed_state = parse_state(turn)
+            self.add_state(turn, parsed_state)
+            parsed_states.append(parsed_state)
 
-        for i in range(1, len(turns)):
+        number_of_turns = len(parsed_states)
 
-            previous_state = turns[i-1]
-            current_state = turns[i]
-
-            self.add_state(previous_state)
-            self.add_state(current_state)
-
-            parsed_previous_state = parse_state(previous_state)
-            parsed_current_state = parse_state(current_state)
-
-            old_q = self.Q[parsed_previous_state]
-
-            current_value = self.Q[parsed_current_state]
-
-            self.Q[parsed_previous_state] = old_q + self.alpha * (current_value - old_q)
+        for i in reversed(range(1, number_of_turns)):
+            old_q = self.Q[parsed_states[i - 1]]
+            current_value = self.Q[parsed_states[i]]
+            self.Q[parsed_states[i - 1]] = old_q + self.alpha * (
+            self.gamma ** (number_of_turns - i) * current_value - old_q)
 
     def get_action(self, state):
         valid_moves = get_valid_moves(state)
-
-        if random.random() < 0.1:
-            return Agent.get_action(self, state)
 
         self.add_state(state)
 
@@ -118,22 +113,32 @@ class LearningAgent(Agent):
         max_value = None
         for move in valid_moves:
             simulated_state = make_move(state, move, self.tile)
-            self.add_state(simulated_state)
             parsed_simulated_state = parse_state(simulated_state)
+
+            self.add_state(simulated_state, parsed_simulated_state)
             state_value = self.Q[parsed_simulated_state]
             if state_value > max_value:
                 max_value = state_value
                 max_move = move
 
-        return max_move
+        if max_value > 0:
+            return max_move
+        else:
+            if random.random() < 0.1:
+                return Agent.get_action(self, state)
+            else:
+                return max_move
 
-    def add_state(self, state):
-        parsed_state = parse_state(state)
+    def add_state(self, state, parsed_state=None):
+        if not parsed_state:
+            parsed_state = parse_state(state)
+
         if parsed_state not in self.Q.keys():
             winner = get_winner(state, [1, -1])
             if winner == 1:
                 self.Q[parsed_state] = 1
             elif winner == 0:
-                self.Q[parsed_state] = 0.5
-            elif winner == -1:
                 self.Q[parsed_state] = 0
+            elif winner == -1:
+                self.Q[parsed_state] = -1
+            self.added_states += 1
