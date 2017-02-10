@@ -82,14 +82,18 @@ class IntelligentAgent(Agent):
 
 
 class LearningAgent(Agent):
-    def __init__(self, tile=None, alpha=0.5, gamma=0.9):
+    def __init__(self, tile=None, opponent_tile=None, alpha=0.5, gamma=0.9):
         Agent.__init__(self, tile)
+        self.opponent_tile = opponent_tile
         self.learns = True
         self.added_states = 0
         self.gamma = gamma
         self.model = NeuralNetwork(42, 128, 1, alpha)
+        self.learning = True
 
     def learn(self, turns):
+        self.model.e_input_to_hidden = 0
+        self.model.e_hidden_to_output = 0
         parsed_states = []
 
         for turn in turns:
@@ -97,27 +101,40 @@ class LearningAgent(Agent):
 
         for i in range(1, len(parsed_states)):
             winner = get_winner(turns[i])
-            if winner == 1:
+            if winner * self.tile == 1:
                 reward = 1
             else:
                 reward = 0
+
             self.model.train(parsed_states[i-1], parsed_states[i], reward)
 
     def get_action(self, state):
-        valid_moves = get_valid_moves(state)
+        valid_moves_1 = get_valid_moves(state)
 
         max_move = None
         max_value = None
-        for move in valid_moves:
+        for move in valid_moves_1:
             simulated_state = make_move(state, move, self.tile)
-            parsed_simulated_state = parse_state(simulated_state)
+            valid_moves_2 = get_valid_moves(simulated_state)
 
-            state_value = self.model.predict(parsed_simulated_state)
-            if state_value > max_value:
-                max_value = state_value
-                max_move = move
+            if valid_moves_2:
+                for move2 in valid_moves_2:
+                    simulated_state_2 = make_move(state, move2, self.opponent_tile)
+                    parsed_simulated_state_2 = parse_state(simulated_state_2)
+                    state_value = self.model.predict(parsed_simulated_state_2)
 
-        if random.random() < 0.1:
+                    if state_value > max_value:
+                        max_value = state_value
+                        max_move = move
+            else:
+                parsed_simulated_state = parse_state(simulated_state)
+                state_value = self.model.predict(parsed_simulated_state)
+
+                if state_value > max_value:
+                    max_value = state_value
+                    max_move = move
+
+        if random.random() < 0.1 and self.learning:
             return Agent.get_action(self, state)
         else:
             return max_move

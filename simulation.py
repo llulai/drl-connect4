@@ -85,18 +85,16 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
                 #games_started = 0
 
             if backup and iteration % print_every == 0:
-                save_q(agents[0])
+                save_q(agents[0], 'agents/learning_agent_%s' %iteration)
 
     return agents[0], results
 
 
-def save_q(agent):
-    pickle_file = 'learning_agent.pickle'
+def save_q(agent, filename='learning_agent'):
+    data = {'agent': agent}
 
-    dataset = {'learningagent': agent.Q}
-
-    with open(pickle_file, 'wb') as picklefile:
-        pickle.dump(dataset, picklefile, pickle.HIGHEST_PROTOCOL)
+    with open(filename + '.pickle', 'wb') as picklefile:
+        pickle.dump(data, picklefile, pickle.HIGHEST_PROTOCOL)
     picklefile.close()
 
 

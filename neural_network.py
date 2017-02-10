@@ -1,5 +1,8 @@
 import numpy as np
 
+def sigmoid(x):
+    return 1./(1+np.exp(-x))
+
 
 class NeuralNetwork(object):
     def __init__(self, input_nodes, hidden_nodes, output_nodes, learning_rate):
@@ -20,10 +23,14 @@ class NeuralNetwork(object):
         self.e_hidden_to_output = np.zeros((self.output_nodes, self.hidden_nodes))
 
         self.lr = learning_rate
+        self.e_lambda = 0.75
+        self.gamma = 1
 
         #### Set this to your implemented sigmoid function ####
         # Activation function is the sigmoid function
-        self.activation_function = lambda x: 1./(1+np.exp(-x))
+        self.activation_function = sigmoid
+        #self.activation_function = lambda x: np.log(1+np.exp(x))
+        #self.activation_derivate = lambda x: 1./(1+np.exp(-x))
         self.vectorized_activation_function = np.vectorize(self.activation_function)
 
     def predict(self, inputs_list):
@@ -53,10 +60,11 @@ class NeuralNetwork(object):
         final_outputs = final_inputs  # signals from final output layer
 
         output_grad = final_outputs * (1 - final_outputs) * hidden_outputs.T
-        self.e_hidden_to_output += output_grad
+        #output_grad = self.activation_derivate(final_outputs) * hidden_outputs.T
+        self.e_hidden_to_output = self.e_hidden_to_output * self.e_lambda * output_grad
 
         hidden_grad = np.dot(hidden_outputs * (1 - hidden_outputs) * output_grad.T, inputs.T)
-        self.e_input_to_hidden += hidden_grad
+        self.e_input_to_hidden = self.e_input_to_hidden * self.e_lambda * hidden_grad
 
         p_st1 = self.predict(st_1)
 
