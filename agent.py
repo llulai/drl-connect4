@@ -87,7 +87,7 @@ class LearningAgent(Agent):
         self.learns = True
         self.added_states = 0
         self.gamma = gamma
-        self.model = NeuralNetwork(42, 1024, 1, alpha)
+        self.model = NeuralNetwork(42, 128, 1, alpha)
 
     def learn(self, turns):
         parsed_states = []

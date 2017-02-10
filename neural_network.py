@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class NeuralNetwork(object):
     def __init__(self, input_nodes, hidden_nodes, output_nodes, learning_rate):
         # Set number of nodes in input, hidden and output layers.
@@ -29,13 +30,11 @@ class NeuralNetwork(object):
         # Run a forward pass through the network
         inputs = np.array(inputs_list, ndmin=2).T
 
-        #### Implement the forward pass here ####
-        ### Forward pass ###
-        # TODO: Hidden layer
+        # hidden layer
         hidden_inputs = np.dot(self.weights_input_to_hidden, inputs)  # signals into hidden layer
         hidden_outputs = self.vectorized_activation_function(hidden_inputs)  # signals from hidden layer
 
-        # TODO: Output layer
+        # output layer
         final_inputs = np.dot(self.weights_hidden_to_output, hidden_outputs)  # signals into final output layer
         final_outputs = self.vectorized_activation_function(final_inputs)  # signals from final output layer
 
@@ -45,47 +44,22 @@ class NeuralNetwork(object):
         # Convert inputs list to 2d array
         inputs = np.array(st, ndmin=2).T
 
-        #### Implement the forward pass here ####
-        ### Forward pass ###
-        # TODO: Hidden layer
+        # hidden layer
         hidden_inputs = np.dot(self.weights_input_to_hidden, inputs)  # signals into hidden layer
         hidden_outputs = self.vectorized_activation_function(hidden_inputs)  # signals from hidden layer
 
-        # TODO: Output layer
+        # output layer
         final_inputs = np.dot(self.weights_hidden_to_output, hidden_outputs)  # signals into final output layer
         final_outputs = final_inputs  # signals from final output layer
 
-        #### Implement the backward pass here ####
-        ### Backward pass ###
-
-        # TODO: Output error
-        # Output layer error is the difference between desired target and actual output.
-        # output_errors = reward - final_outputs
         output_grad = final_outputs * (1 - final_outputs) * hidden_outputs.T
-
         self.e_hidden_to_output += output_grad
 
-        #print('output grad shape: ' + str(output_grad.shape))
-        #print('hidden output shape: ' + str(hidden_outputs.shape))
-        #print('e hidden to output shape: ' + str(self.e_hidden_to_output.shape))
-
-
-
-
-        # TODO: Backpropagated error
-        # errors propagated to the hidden layer
-        #hidden_errors = output_errors * self.weights_hidden_to_output
         hidden_grad = np.dot(hidden_outputs * (1 - hidden_outputs) * output_grad.T, inputs.T)
-        #print('hidden grad shape: ' + str(hidden_grad.shape))
-        #print('hidden output shape: ' + str(hidden_outputs.shape))
-        #print('input shape: ' + str(inputs.shape))
-
         self.e_input_to_hidden += hidden_grad
 
-
-
         p_st1 = self.predict(st_1)
-        # TODO: Update the weights
+
         self.weights_hidden_to_output += self.lr * (reward + p_st1 - final_outputs) * self.e_hidden_to_output
         self.weights_input_to_hidden += self.lr * (reward + p_st1 - final_outputs) * self.e_input_to_hidden
 
