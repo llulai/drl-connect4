@@ -60,21 +60,25 @@ class NeuralNetwork(object):
 
         # TODO: Output error
         # Output layer error is the difference between desired target and actual output.
-        output_errors = reward - final_outputs
-        output_grad = final_outputs * (1 - final_outputs) * self.weights_hidden_to_output
+        # output_errors = reward - final_outputs
+        output_grad = final_outputs * (1 - final_outputs) * hidden_outputs.T
 
         self.e_hidden_to_output += output_grad
 
-        print('output grad shape: ' + str(output_grad.shape))
-        print('hidden output shape: ' + str(hidden_outputs.shape))
+        #print('output grad shape: ' + str(output_grad.shape))
+        #print('hidden output shape: ' + str(hidden_outputs.shape))
+        #print('e hidden to output shape: ' + str(self.e_hidden_to_output.shape))
+
 
 
 
         # TODO: Backpropagated error
         # errors propagated to the hidden layer
         #hidden_errors = output_errors * self.weights_hidden_to_output
-        hidden_grad = hidden_outputs * (1 - hidden_outputs) * output_grad
-        print('hidden grad shape: ' + str(hidden_grad.shape))
+        hidden_grad = np.dot(hidden_outputs * (1 - hidden_outputs) * output_grad.T, inputs.T)
+        #print('hidden grad shape: ' + str(hidden_grad.shape))
+        #print('hidden output shape: ' + str(hidden_outputs.shape))
+        #print('input shape: ' + str(inputs.shape))
 
         self.e_input_to_hidden += hidden_grad
 

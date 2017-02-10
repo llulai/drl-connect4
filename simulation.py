@@ -72,16 +72,17 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
         if log:
             reward = get_winner(state, tiles)
             total_reward += reward
-            if reward > 0 and played_first:
+            if reward > 0:
                 won += 1
-            games_started += 1 if played_first else 0
+            #games_started += 1 if played_first else 0
 
             if iteration % print_every == 0:
-                print('won ' + str(won) + ' out of ' + str(games_started) + ' games')
+                print('won ' + str(won) + ' out of ' + str(print_every) + ' games')
                 print('reward: ' + str(total_reward))
 
                 total_reward = 0
                 won = 0
+                #games_started = 0
 
             if backup and iteration % print_every == 0:
                 save_q(agents[0])
