@@ -1,6 +1,8 @@
 from agent import IntelligentAgent, LearningAgent
 from simulation import simulate
 import pickle
+from keras.models import load_model
+from model import create_model
 
 
 def load_q():
@@ -13,10 +15,16 @@ def load_q():
 
 
 def main():
-    agents = [LearningAgent(1), IntelligentAgent(-1, 1)]
-    #agents[0].Q = load_q()
+    try:
+        model = load_model('1model.h5')
+    except:
+        model = create_model()
 
-    simulate(agents=agents, iterations=1, log=True, print_every=1, backup=True)
+    model = create_model()
+
+    agents = [LearningAgent(tile=1, batch_size=25, memory=50, model=model), IntelligentAgent(-1, 1)]
+
+    simulate(agents=agents, iterations=1000, log=True, print_every=100, backup=True)
 
 if __name__ == '__main__':
     main()

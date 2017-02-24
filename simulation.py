@@ -62,31 +62,36 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
                 turn = {'a': action, 'st0': initial_state, 'st1': state}
                 current_game.append(turn)
 
+        current_game = parse_game(current_game, state, 0.9)
+
         # add the last game to the results list
         results.append(current_game)
 
         for agent in agents:
             if agent.learns:
                 agent.memorize(current_game)
-                #agent.learn(current_game)
+                if iteration > agent.batch_size:
+                    agent.learn()
 
         if log:
             reward = get_winner(state)
             total_reward += reward
-            if reward > 0 and played_first:
+            if reward > 0:
                 won += 1
-            games_started += 1 if played_first else 0
+            #games_started += 1 if played_first else 0
 
             if iteration % print_every == 0:
-                print('won ' + str(won) + ' out of ' + str(games_started) + ' games')
+                print('won ' + str(won) + ' out of ' + str(print_every) + ' games')
                 print('reward: ' + str(total_reward))
 
                 total_reward = 0
                 won = 0
-                games_started = 0
+             #   games_started = 0
 
             if backup and iteration % print_every == 0:
-                save_q(agents[0])
+                for agent in agents:
+                    if agent.learns:
+                        agent.model.save(str(agent.tile) + 'model.h5')
 
     return agents[0], results
 

@@ -2,10 +2,11 @@ import numpy as np
 import random
 from environment import get_valid_moves, make_move, get_winner
 from collections import deque
+from model import create_model
 
 
 def parse_state(state):
-    return ''.join(map(str, list(np.array(state).flatten())))
+    return np.array(state).reshape((1, 6, 7, 1))
 
 
 class Agent:
@@ -59,7 +60,6 @@ class IntelligentAgent(Agent):
 
         # get all possible moves
         possible_actions = get_valid_moves(state)
-        tiles = [self.tile, self.opponent_tile]
 
         # check if it has a winning move
         for action in possible_actions:
@@ -82,19 +82,64 @@ class IntelligentAgent(Agent):
 
 
 class LearningAgent(Agent):
-    def __init__(self, tile=None, alpha=0.5, gamma=0.9, memory=100):
+    def __init__(self,
+                 tile=None,
+                 alpha=0.5,
+                 gamma=0.9,
+                 memory=100,
+                 model=create_model(),
+                 batch_size=32,
+                 exploration_rate=0.25):
+
         Agent.__init__(self, tile)
+        self.learns = True
+
         self.Q = deque([], memory)
         self.alpha = alpha
-        self.learns = True
-        self.added_states = 0
         self.gamma = gamma
+        self.model = model
+        self.batch_size = batch_size
+        self.exploration_rate = exploration_rate
 
     def memorize(self, game):
         self.Q.append(game)
 
-    def learn(self, turns):
-        pass
+    def learn(self):
+        games = random.sample(self.Q, self.batch_size)
+        inputs = []
+        y = []
+        for game in games:
+            for turn in game:
+                x = parse_state(turn['st0'])
+                p = self.model.predict(x).reshape(7)
+
+                try:
+                    x1 = parse_state(turn['st1'])
+                    p1 = self.model.predict(x1)[0]
+
+                    reward = p1.max()
+                except:
+                    reward = turn['r']
+
+                p[turn['a']] = reward
+
+                inputs.append(x[0])
+                y.append(p)
+
+        inputs = np.array(inputs)
+        y = np.array(y)
+
+        self.model.train_on_batch(inputs, y)
 
     def get_action(self, state):
-        return Agent.get_action(self, state)
+        if random.random() < self.exploration_rate:
+            return Agent.get_action(self, state)
+
+        parsed_state = parse_state(state)
+        action = self.model.predict(parsed_state).argmax()
+        valid_actions = get_valid_moves(state)
+
+        if action in valid_actions:
+            return action
+        else:
+            return Agent.get_action(self, state)
