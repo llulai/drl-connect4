@@ -64,7 +64,7 @@ class IntelligentAgent(Agent):
         for action in possible_actions:
             simulated_state = make_move(state, action, tile=self.tile)
             # if the simulated next state is a winning game
-            if get_winner(simulated_state, tiles) == self.tile:
+            if get_winner(simulated_state) == self.tile:
                 # take the action
                 return action
 
@@ -72,7 +72,7 @@ class IntelligentAgent(Agent):
         for action in possible_actions:
             simulated_state = make_move(state, action, tile=self.opponent_tile)
             # if the simulated state is a loosing game
-            if get_winner(simulated_state, tiles) == self.opponent_tile:
+            if get_winner(simulated_state) == self.opponent_tile:
                 # block that move
                 return action
 
@@ -134,7 +134,7 @@ class LearningAgent(Agent):
             parsed_state = parse_state(state)
 
         if parsed_state not in self.Q.keys():
-            winner = get_winner(state, [1, -1])
+            winner = get_winner(state)
             if winner == 1:
                 self.Q[parsed_state] = 1
             elif winner == 0:

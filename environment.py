@@ -35,38 +35,36 @@ def get_not_valid_moves(state):
     return not_valid_moves
 
 
-def get_winner(state, tiles):
+def get_winner(state):
     """
     :param state: 2D list (default 6 rows and 7 columns)
-    :param tiles: list holding the different players tiles
     :return: returns the tile of the winner or 0 in case there is no winner
     """
     height = len(state)
     width = len(state[0])
-    
-    #for tile in tiles:
+
     # check horizontal
     for x in range(width - 3):
         for y in range(height):
-            if state[y][x] == state[y][x+1] == state[y][x+2] == state[y][x+3]:
+            if state[y][x] == state[y][x+1] == state[y][x+2] == state[y][x+3] != 0:
                 return state[y][x]
 
     # check vertical
     for x in range(width):
         for y in range(height - 3):
-            if state[y][x] == state[y+1][x] == state[y+2][x] == state[y+3][x]:
+            if state[y][x] == state[y+1][x] == state[y+2][x] == state[y+3][x] != 0:
                 return state[y][x]
 
     # check / diagonal
     for x in range(width - 3):
         for y in range(height - 3):
-            if state[y][x] == state[y+1][x+1] == state[y+2][x+2] == state[y+3][x+3]:
+            if state[y][x] == state[y+1][x+1] == state[y+2][x+2] == state[y+3][x+3] != 0:
                 return state[y][x]
 
     # check \ diagonal
     for x in range(3, width - 3):
         for y in range(height - 3):
-            if state[y][x] == state[y+1][x-1] == state[y+2][x-2] == state[y+3][x-3]:
+            if state[y][x] == state[y+1][x-1] == state[y+2][x-2] == state[y+3][x-3] != 0:
                 return state[y][x]
     
     return 0
@@ -87,14 +85,13 @@ def make_move(state, action, tile):
                 return new_state
 
 
-def game_over(state, tiles):
+def game_over(state):
     """
     checks whether there are any valid moves left or if there is a winner
     :param state: 2D list (default 6 rows and 7 columns)
-    :param tiles: list holding the different players tiles
     :return: True if the game is over, False otherwise
     """
-    return get_winner(state, tiles) or not get_valid_moves(state)
+    return get_winner(state) or not get_valid_moves(state)
 
 
 def get_initial_state():

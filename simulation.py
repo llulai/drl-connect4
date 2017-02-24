@@ -42,7 +42,7 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
 
         played_first =  current_player.tile == 1
 
-        while not game_over(state, tiles):
+        while not game_over(state):
 
             # initial state for this turn to string
             initial_state = state
@@ -70,7 +70,7 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
                 agent.learn(current_game)
 
         if log:
-            reward = get_winner(state, tiles)
+            reward = get_winner(state)
             total_reward += reward
             if reward > 0 and played_first:
                 won += 1
@@ -104,7 +104,7 @@ def parse_game(current_game, last_state, gamma, tiles):
     clean_game = []
 
     turns = len(current_game)
-    reward = get_winner(last_state, tiles)
+    reward = get_winner(last_state)
 
     for i, step in enumerate(current_game):
 
