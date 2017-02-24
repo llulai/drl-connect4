@@ -1,6 +1,7 @@
 import numpy as np
 import random
 from environment import get_valid_moves, make_move, get_winner
+from collections import deque
 
 
 def parse_state(state):
@@ -81,64 +82,19 @@ class IntelligentAgent(Agent):
 
 
 class LearningAgent(Agent):
-    def __init__(self, tile=None, alpha=0.5, gamma=0.9):
+    def __init__(self, tile=None, alpha=0.5, gamma=0.9, memory=100):
         Agent.__init__(self, tile)
-        self.Q = {}
+        self.Q = deque([], memory)
         self.alpha = alpha
         self.learns = True
         self.added_states = 0
         self.gamma = gamma
 
+    def memorize(self, game):
+        self.Q.append(game)
+
     def learn(self, turns):
-        parsed_states = []
-        for turn in turns:
-            parsed_state = parse_state(turn)
-            self.add_state(turn, parsed_state)
-            parsed_states.append(parsed_state)
-
-        number_of_turns = len(parsed_states)
-
-        for i in reversed(range(1, number_of_turns)):
-            old_q = self.Q[parsed_states[i - 1]]
-            current_value = self.Q[parsed_states[i]]
-            self.Q[parsed_states[i - 1]] = old_q + self.alpha * (
-            self.gamma ** (number_of_turns - i) * current_value - old_q)
+        pass
 
     def get_action(self, state):
-        valid_moves = get_valid_moves(state)
-
-        self.add_state(state)
-
-        max_move = None
-        max_value = None
-        for move in valid_moves:
-            simulated_state = make_move(state, move, self.tile)
-            parsed_simulated_state = parse_state(simulated_state)
-
-            self.add_state(simulated_state, parsed_simulated_state)
-            state_value = self.Q[parsed_simulated_state]
-            if state_value > max_value:
-                max_value = state_value
-                max_move = move
-
-        if max_value > 0:
-            return max_move
-        else:
-            if random.random() < 0.1:
-                return Agent.get_action(self, state)
-            else:
-                return max_move
-
-    def add_state(self, state, parsed_state=None):
-        if not parsed_state:
-            parsed_state = parse_state(state)
-
-        if parsed_state not in self.Q.keys():
-            winner = get_winner(state)
-            if winner == 1:
-                self.Q[parsed_state] = 1
-            elif winner == 0:
-                self.Q[parsed_state] = 0
-            elif winner == -1:
-                self.Q[parsed_state] = -1
-            self.added_states += 1
+        return Agent.get_action(self, state)

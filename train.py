@@ -16,7 +16,7 @@ def main():
     agents = [LearningAgent(1), IntelligentAgent(-1, 1)]
     #agents[0].Q = load_q()
 
-    simulate(agents=agents, iterations=1000, log=True, print_every=100, backup=True)
+    simulate(agents=agents, iterations=1, log=True, print_every=1, backup=True)
 
 if __name__ == '__main__':
     main()

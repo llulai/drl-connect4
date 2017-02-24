@@ -58,16 +58,17 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
             
             # if the current player is agent 1
             # add the current turn to the list
-            current_game.append(initial_state)
-
-        current_game.append(state)
+            if current_player.tile == 1:
+                turn = {'a': action, 'st0': initial_state, 'st1': state}
+                current_game.append(turn)
 
         # add the last game to the results list
         results.append(current_game)
 
         for agent in agents:
             if agent.learns:
-                agent.learn(current_game)
+                agent.memorize(current_game)
+                #agent.learn(current_game)
 
         if log:
             reward = get_winner(state)
@@ -100,26 +101,16 @@ def save_q(agent):
     picklefile.close()
 
 
-def parse_game(current_game, last_state, gamma, tiles):
+def parse_game(current_game, last_state, gamma):
     # clean results for game
     clean_game = []
 
     turns = len(current_game)
     reward = get_winner(last_state)
 
-    for i, step in enumerate(current_game):
+    for i, turn in enumerate(current_game):
+        turn['r'] = gamma ** (turns - i - 1) * reward
 
-        clean_step = {
-            'st': step[0],
-            'action': step[1],
-            'reward': gamma ** (turns - i - 1) * reward
-        }
-
-#        try:
-#            clean_step['st_1'] = current_game[i + 1][0]
-#        except IndexError:
-#            clean_step['st_1'] = None
-
-        clean_game.append(clean_step)
+        clean_game.append(turn)
 
     return clean_game
