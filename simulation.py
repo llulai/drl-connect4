@@ -82,6 +82,7 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
 
                 total_reward = 0
                 won = 0
+                games_started = 0
 
             if backup and iteration % print_every == 0:
                 save_q(agents[0])
