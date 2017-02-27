@@ -22,7 +22,7 @@ def main():
 
     model = create_model()
 
-    agents = [LearningAgent(tile=1, batch_size=10, memory=50, model=model), IntelligentAgent(-1, 1)]
+    agents = [LearningAgent(tile=1, batch_size=10, memory=100, model=model), IntelligentAgent(-1, 1)]
 
     simulate(agents=agents, iterations=1000, log=True, print_every=10, backup=False)
 

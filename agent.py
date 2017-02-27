@@ -17,11 +17,12 @@ def get_winner_grid(state, tile):
     return winner_grid
 
 
-def parse_state(state, tile):
-    winner_grid = get_winner_grid(state, tile)
-    grid = [state, winner_grid]
-    parsed_state = np.array(grid).transpose((1, 2, 0))
-    return parsed_state.reshape((1, 6, 7, 2))
+def parse_state(state):
+    #winner_grid = get_winner_grid(state, tile)
+    #grid = [state, winner_grid]
+    #parsed_state = np.array(grid).transpose((1, 2, 0))
+    #return parsed_state.reshape((1, 6, 7, 2))
+    return np.array(state).reshape((1, 6, 7, 1))
 
 
 def parse_action(action):
@@ -133,51 +134,47 @@ class LearningAgent(Agent):
     def learn(self):
         games = random.sample(self.Q, self.batch_size)
         states = []
-        actions = []
-        tiles = []
 
         y = []
         for game in games:
-            for turn in game:
-                st0 = parse_state(turn['st0'], self.tile)
-                a = parse_action(turn['a'])
-                t = parse_tile(self.tile)
+            turns = len(game)
+            for i in range(1, turns):
+                st0 = parse_state(game[i-1]['st0'])
+                st1 = parse_state(game[i]['st0'])
 
-                p = self.model.predict([st0, a, t])[0][0]
-                p = (1 - self.alpha) * p + self.alpha * turn['r']
+                pt0 = self.model.predict(st0)[0][0]
+                pt1 = self.model.predict(st1)[0][0]
+
+
+                #p = (1 - self.alpha) * p + self.alpha * turn['r']
+                if i == turns - 1:
+                    p = pt0 + self.alpha * (game[i]['r'] + self.gamma * pt1 - pt0)
+                else:
+                    p = pt0 + self.alpha * (self.gamma * pt1 - pt0)
 
                 states.append(st0[0])
-                actions.append(a[0])
-                tiles.append(t[0])
                 y.append(p)
 
         states = np.array(states)
-        actions = np.array(actions)
-        tiles = np.array(tiles)
         y = np.array(y)
 
-        self.model.train_on_batch([states, actions, tiles], y)
+        self.model.train_on_batch(states, y)
 
     def get_action(self, state):
         if random.random() < self.exploration_rate:
             action = Agent.get_action(self, state)
-            #print(action)
             return action
 
         valid_actions = get_valid_moves(state)
         max_value = - float('inf')
         max_action = None
-        parsed_state = parse_state(state, self.tile)
-        parsed_tile = parse_tile(self.tile)
         for action in valid_actions:
-            parsed_action = parse_action(action)
-            value_new_state = self.model.predict([parsed_state, parsed_action, parsed_tile])[0][0]
+            new_state = make_move(state, action, self.tile)
+            parsed_new_state = parse_state(new_state)
+            value_new_state = self.model.predict(parsed_new_state)[0][0]
 
             if value_new_state > max_value:
                 max_value = value_new_state
                 max_action = action
-            #print(action, value_new_state)
-
-        print(max_action)
 
         return max_action
