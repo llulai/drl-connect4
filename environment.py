@@ -8,7 +8,9 @@ def get_valid_moves(state):
     :param state: 2D list (default 6 rows and 7 columns)
     :return: (list) with indexes where it is possible to put a tile
     """
-    
+    if get_winner(state) != 0:
+        return []
+
     valid_moves = [] 
     # check every cell in the top row
     for i, cell in enumerate(state[0]):

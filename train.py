@@ -24,7 +24,7 @@ def main():
 
     agents = [LearningAgent(tile=1, batch_size=10, memory=100, model=model), IntelligentAgent(-1, 1)]
 
-    simulate(agents=agents, iterations=1000, log=True, print_every=10, backup=False)
+    simulate(agents=agents, iterations=1000, log=True, print_every=10, backup=True)
 
 if __name__ == '__main__':
     main()

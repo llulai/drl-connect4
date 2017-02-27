@@ -58,10 +58,11 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
             
             # if the current player is agent 1
             # add the current turn to the list
-            turn = {'a': action, 'st0': initial_state, 'tile': current_player.tile}
-            current_game.append(turn)
+            #turn = {'a': action, 'st0': initial_state, 'tile': current_player.tile}
+            current_game.append(initial_state)
 
-        current_game = parse_game(current_game, state, 0.9)
+        #current_game = parse_game(current_game, state, 0.9)
+        current_game.append(state)
 
         # add the last game to the results list
         results.append(current_game)
@@ -69,7 +70,7 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
         for agent in agents:
             if agent.learns:
                 agent.memorize(current_game)
-                if iteration > agent.batch_size:
+                if iteration > agent.batch_size * 2:
                     agent.learn()
 
         if log:

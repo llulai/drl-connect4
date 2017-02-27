@@ -133,32 +133,31 @@ class LearningAgent(Agent):
 
     def learn(self):
         games = random.sample(self.Q, self.batch_size)
-        states = []
 
-        y = []
-        for game in games:
-            turns = len(game)
-            for i in range(1, turns):
-                st0 = parse_state(game[i-1]['st0'])
-                st1 = parse_state(game[i]['st0'])
+        states = []
+        values = []
+
+        for turns in games:
+            for i in reversed(range(1, len(turns))):
+                st0 = parse_state(turns[i-1])
+                st1 = parse_state(turns[i])
 
                 pt0 = self.model.predict(st0)[0][0]
                 pt1 = self.model.predict(st1)[0][0]
 
-
-                #p = (1 - self.alpha) * p + self.alpha * turn['r']
-                if i == turns - 1:
-                    p = pt0 + self.alpha * (game[i]['r'] + self.gamma * pt1 - pt0)
+                if i == len(turns) - 1:
+                    reward = get_winner(turns[i-1])
+                    p = pt0 + self.alpha * (reward + self.gamma * pt1 - pt0)
                 else:
                     p = pt0 + self.alpha * (self.gamma * pt1 - pt0)
 
                 states.append(st0[0])
-                y.append(p)
+                values.append(p)
 
         states = np.array(states)
-        y = np.array(y)
+        values = np.array(values)
 
-        self.model.train_on_batch(states, y)
+        self.model.train_on_batch(states, values)
 
     def get_action(self, state):
         if random.random() < self.exploration_rate:
