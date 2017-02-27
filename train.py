@@ -24,7 +24,27 @@ def main():
 
     agents = [LearningAgent(tile=1, batch_size=10, memory=50, model=model), IntelligentAgent(-1, 1)]
 
-    simulate(agents=agents, iterations=1000, log=True, print_every=100, backup=True)
+    simulate(agents=agents, iterations=1000, log=True, print_every=10, backup=False)
 
 if __name__ == '__main__':
     main()
+    #from agent import parse_action, parse_tile, parse_state
+    #from environment import get_initial_state
+    #state = parse_state(get_initial_state())
+    #action = parse_action(1)
+    #tile = parse_tile(1)
+    #print(action.shape)
+
+
+    #model = create_model()
+    #p = model.predict([state, action, tile])
+    #print(p)
+    #state = [[0, 0, 0, 0, 0, 0, 0],
+    #         [0, 0, 0, 0, 0, 0, 0],
+    #         [0, 0, 0, 0, 0, 0, 0],
+    #         [1, 0, 0, 0, 0, 0, 0],
+    #         [1, 0, 0, 0, 0, 0, 0],
+    #         [1, 1, 1, 0, 0, 0, 0],
+    #         ]
+    #from agent import parse_state
+    #print(parse_state(state,1))

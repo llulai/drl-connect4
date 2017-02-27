@@ -1,17 +1,43 @@
 import numpy as np
 import random
-from environment import get_valid_moves, make_move, get_winner
+from environment import get_valid_moves, make_move, get_winner, get_initial_state
 from collections import deque
 from model import create_model
 
 
-def parse_state(state):
-    return np.array(state).reshape((1, 6, 7, 1))
+def get_winner_grid(state, tile):
+    winner_grid = get_initial_state()
+    for action in get_valid_moves(state):
+        new_state = make_move(state, action, tile)
+        if get_winner(new_state) == tile:
+            for i in reversed(range(6)):
+                if state[i][action] == 0:
+                    winner_grid[i][action] = 1
+                    break
+    return winner_grid
+
+
+def parse_state(state, tile):
+    winner_grid = get_winner_grid(state, tile)
+    grid = [state, winner_grid]
+    parsed_state = np.array(grid).transpose((1, 2, 0))
+    return parsed_state.reshape((1, 6, 7, 2))
+
+
+def parse_action(action):
+    p_action = np.zeros((1, 7))
+    p_action[0][action] = 1
+    return p_action
+
+
+def parse_tile(tile):
+    return np.array([tile])
 
 
 class Agent:
     """it is the most basic class for an agent
        it performs random actions"""
+
     def __init__(self, tile=None):
         """
         :param tile (int): Tile to be used by the agent when playing the game
@@ -25,7 +51,7 @@ class Agent:
         :return int: Index of the column to put the piece (always checks for valid moves)
         """
         return random.choice(get_valid_moves(state))
-    
+
     def get_tile(self):
         return self.tile
 
@@ -106,40 +132,52 @@ class LearningAgent(Agent):
 
     def learn(self):
         games = random.sample(self.Q, self.batch_size)
-        inputs = []
+        states = []
+        actions = []
+        tiles = []
+
         y = []
         for game in games:
             for turn in game:
-                x = parse_state(turn['st0'])
-                p = self.model.predict(x).reshape(7)
+                st0 = parse_state(turn['st0'], self.tile)
+                a = parse_action(turn['a'])
+                t = parse_tile(self.tile)
 
-                try:
-                    x1 = parse_state(turn['st1'])
-                    p1 = self.model.predict(x1)[0]
+                p = self.model.predict([st0, a, t])[0][0]
+                p = (1 - self.alpha) * p + self.alpha * turn['r']
 
-                    reward = p1.max()
-                except:
-                    reward = turn['r']
-
-                p[turn['a']] = reward
-
-                inputs.append(x[0])
+                states.append(st0[0])
+                actions.append(a[0])
+                tiles.append(t[0])
                 y.append(p)
 
-        inputs = np.array(inputs)
+        states = np.array(states)
+        actions = np.array(actions)
+        tiles = np.array(tiles)
         y = np.array(y)
 
-        self.model.train_on_batch(inputs, y)
+        self.model.train_on_batch([states, actions, tiles], y)
 
     def get_action(self, state):
         if random.random() < self.exploration_rate:
-            return Agent.get_action(self, state)
-
-        parsed_state = parse_state(state)
-        action = self.model.predict(parsed_state).argmax()
-        valid_actions = get_valid_moves(state)
-
-        if action in valid_actions:
+            action = Agent.get_action(self, state)
+            #print(action)
             return action
-        else:
-            return Agent.get_action(self, state)
+
+        valid_actions = get_valid_moves(state)
+        max_value = - float('inf')
+        max_action = None
+        parsed_state = parse_state(state, self.tile)
+        parsed_tile = parse_tile(self.tile)
+        for action in valid_actions:
+            parsed_action = parse_action(action)
+            value_new_state = self.model.predict([parsed_state, parsed_action, parsed_tile])[0][0]
+
+            if value_new_state > max_value:
+                max_value = value_new_state
+                max_action = action
+            #print(action, value_new_state)
+
+        print(max_action)
+
+        return max_action

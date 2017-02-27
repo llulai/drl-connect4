@@ -58,9 +58,8 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
             
             # if the current player is agent 1
             # add the current turn to the list
-            if current_player.tile == 1:
-                turn = {'a': action, 'st0': initial_state, 'st1': state}
-                current_game.append(turn)
+            turn = {'a': action, 'st0': initial_state, 'tile': current_player.tile}
+            current_game.append(turn)
 
         current_game = parse_game(current_game, state, 0.9)
 
@@ -86,7 +85,7 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
 
                 total_reward = 0
                 won = 0
-             #   games_started = 0
+             #  games_started = 0
 
             if backup and iteration % print_every == 0:
                 for agent in agents:
