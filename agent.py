@@ -136,9 +136,8 @@ class LearningAgent(Agent):
 
         states = []
         values = []
-
         for turns in games:
-            for i in reversed(range(1, len(turns))):
+            for i in range(1, len(turns)):
                 st0 = parse_state(turns[i-1])
                 st1 = parse_state(turns[i])
 
@@ -146,7 +145,7 @@ class LearningAgent(Agent):
                 pt1 = self.model.predict(st1)[0][0]
 
                 if i == len(turns) - 1:
-                    reward = get_winner(turns[i-1])
+                    reward = get_winner(turns[i])
                     p = pt0 + self.alpha * (reward + self.gamma * pt1 - pt0)
                 else:
                     p = pt0 + self.alpha * (self.gamma * pt1 - pt0)
