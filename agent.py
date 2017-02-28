@@ -137,18 +137,21 @@ class LearningAgent(Agent):
         states = []
         values = []
         for turns in games:
-            for i in range(1, len(turns)):
-                st0 = parse_state(turns[i-1])
-                st1 = parse_state(turns[i])
+            for i in range(len(turns)):
+                st0 = parse_state(turns[i]['st0'])
+                action = turns[i]['a']
+                p = self.model.predict(st0)[0]
 
-                pt0 = self.model.predict(st0)[0][0]
-                pt1 = self.model.predict(st1)[0][0]
-
+                # if terminal state
                 if i == len(turns) - 1:
-                    reward = get_winner(turns[i])
-                    p = pt0 + self.alpha * (reward + self.gamma * pt1 - pt0)
+                    reward = get_winner(turns[i]['st1'])
+                    #reward = 1 if get_winner(turns[i]['st1']) == self.tile else 0
+                    p[action] = reward
                 else:
-                    p = pt0 + self.alpha * (self.gamma * pt1 - pt0)
+                    st1 = parse_state(turns[i]['st1'])
+                    q_sa = np.max(self.model.predict(st1)[0])
+
+                    p[action] = self.gamma * q_sa
 
                 states.append(st0[0])
                 values.append(p)
@@ -163,16 +166,16 @@ class LearningAgent(Agent):
             action = Agent.get_action(self, state)
             return action
 
+        parsed_state = parse_state(state)
+        p = self.model.predict(parsed_state)
+        action_order = list(p.argsort()[0])
+
         valid_actions = get_valid_moves(state)
-        max_value = - float('inf')
-        max_action = None
-        for action in valid_actions:
-            new_state = make_move(state, action, self.tile)
-            parsed_new_state = parse_state(new_state)
-            value_new_state = self.model.predict(parsed_new_state)[0][0]
 
-            if value_new_state > max_value:
-                max_value = value_new_state
-                max_action = action
+        for i in reversed(range(7)):
 
-        return max_action
+            index = action_order.index(i)
+            #print(action_order)
+            if action_order.index(i) in valid_actions:
+                #print(index)
+                return index

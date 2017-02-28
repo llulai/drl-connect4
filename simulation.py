@@ -58,11 +58,13 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
             
             # if the current player is agent 1
             # add the current turn to the list
-            #turn = {'a': action, 'st0': initial_state, 'tile': current_player.tile}
-            current_game.append(initial_state)
+            if current_player.tile == 1:
+                turn = {'a': action, 'st0': initial_state, 'st1': state}
+                current_game.append(turn)
 
         #current_game = parse_game(current_game, state, 0.9)
-        current_game.append(state)
+        #current_game.append(state)
+        current_game[-1]['st1'] = state
 
         # add the last game to the results list
         results.append(current_game)
@@ -70,7 +72,7 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
         for agent in agents:
             if agent.learns:
                 agent.memorize(current_game)
-                if iteration > agent.batch_size * 2:
+                if iteration > agent.batch_size:
                     agent.learn()
 
         if log:
@@ -91,31 +93,6 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
             if backup and iteration % print_every == 0:
                 for agent in agents:
                     if agent.learns:
-                        agent.model.save('model_' + str(iteration) + '.h5')
+                        agent.model.save('models/model_deep_q_learning.h5')
 
     return agents[0], results
-
-
-def save_q(agent):
-    pickle_file = 'learning_agent.pickle'
-
-    dataset = {'learningagent': agent.Q}
-
-    with open(pickle_file, 'wb') as picklefile:
-        pickle.dump(dataset, picklefile, pickle.HIGHEST_PROTOCOL)
-    picklefile.close()
-
-
-def parse_game(current_game, last_state, gamma):
-    # clean results for game
-    clean_game = []
-
-    turns = len(current_game)
-    reward = get_winner(last_state)
-
-    for i, turn in enumerate(current_game):
-        turn['r'] = gamma ** (turns - i - 1) * reward
-
-        clean_game.append(turn)
-
-    return clean_game
