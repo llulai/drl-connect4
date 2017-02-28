@@ -1,43 +1,20 @@
 from keras.models import Model
-from keras.layers import Input, Convolution2D, Dense, Flatten, MaxPooling2D, Dropout
+from keras.layers import Input, Dense
 import keras.backend as K
+from keras.optimizers import RMSprop
 
 
-def create_model():
+def create_model(lr=.001):
 
-    main_input = Input(shape=(6, 7, 1))
-    cnn = Convolution2D(2, 3, 3, border_mode='same', activation='relu', init='normal')(main_input)
-    cnn = MaxPooling2D(pool_size=(1,1), border_mode='same')(cnn)
+    main_input = Input(shape=(42,))
+    cnn = Dense(128, init='normal', activation='sigmoid')(main_input)
+    cnn = Dense(64, init='normal', activation='sigmoid')(cnn)
+    cnn = Dense(32, init='normal', activation='sigmoid')(cnn)
 
-    cnn = Convolution2D(4, 3, 3, border_mode='same', activation='relu', init='normal')(cnn)
-    cnn = MaxPooling2D(pool_size=(1, 1), border_mode='same')(cnn)
-    #cnn = Dropout(0.5)(cnn)
-
-    cnn = Convolution2D(8, 3, 3, border_mode='same', activation='relu', init='normal')(cnn)
-    cnn = MaxPooling2D(pool_size=(2, 2), border_mode='same')(cnn)
-
-    cnn = Convolution2D(16, 3, 3, border_mode='same', activation='relu', init='normal')(cnn)
-    cnn = MaxPooling2D(pool_size=(1, 1), border_mode='same')(cnn)
-    #cnn = Dropout(0.5)(cnn)
-
-    cnn = Convolution2D(32, 3, 3, border_mode='same', activation='relu', init='normal')(cnn)
-    cnn = MaxPooling2D(pool_size=(1, 1), border_mode='same')(cnn)
-
-    cnn = Convolution2D(64, 3, 3, border_mode='same', activation='relu', init='normal')(cnn)
-    cnn = MaxPooling2D(pool_size=(2, 2), border_mode='same')(cnn)
-    #cnn = Dropout(0.5)(cnn)
-
-    cnn = Flatten()(cnn)
-
-    cnn = Dense(2048, init='normal')(cnn)
-    #cnn = Dropout(0.5)(cnn)
-
-    cnn = Dense(1024, init='normal')(cnn)
-    #cnn = Dropout(0.5)(cnn)
-
-    value = Dense(1, init='normal')(cnn)
+    value = Dense(1, init='normal', activation='sigmoid')(cnn)
 
     model = Model(input=main_input, output=value)
-    model.compile(optimizer='rmsprop', loss='mse')
+
+    model.compile(optimizer=RMSprop(lr=lr), loss='mse')
 
     return model

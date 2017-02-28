@@ -1,33 +1,30 @@
-from agent import Agent
+from agent import Agent, LearningAgent
 from itertools import cycle
 from environment import get_initial_state, game_over, make_move, get_winner
 from random import randrange
-import pickle
 
 
-def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup=False, print_every=10):
+def simulate(agent=None, opponent=None, iterations=10, log=True, backup=False, print_every=10, start=0):
     
     # if the agents are not passed
     # create dumb agents
-    for i in range(len(agents)):
-        if not agents[i]:
-            agents[i] = Agent(tiles[i])
-        else:
-            agents[i].set_tile(tiles[i])
+    if not agent:
+        agent = LearningAgent(tile=1)
+    else:
+        agent.set_tile(1)
 
+    if not opponent:
+        opponent = Agent(-1)
     # create an iterator for alternate players
-    players = cycle(agents)
+    players = cycle([agent, opponent])
 
     # initialize list to return
     results = []
     won = 0
-    games_started = 0
     total_reward = 0
 
     # run n simulations
-    for iteration in range(1, iterations + 1):
-        # print('iteration ' + str(iteration) + ' of ' + str(iterations))
-
+    for iteration in range(start + 1, start + iterations + 1):
         # get an empty board
         state = get_initial_state()
 
@@ -39,9 +36,6 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
             current_player = next(players)
         
         # play until the game is over
-
-        played_first =  current_player.tile == 1
-
         while not game_over(state):
 
             # initial state for this turn to string
@@ -55,30 +49,25 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
 
             # perform the action and update the state of the game
             state = make_move(state, action, current_player.tile)
-            
-            # if the current player is agent 1
+
             # add the current turn to the list
-            #turn = {'a': action, 'st0': initial_state, 'tile': current_player.tile}
             current_game.append(initial_state)
 
-        #current_game = parse_game(current_game, state, 0.9)
+        # add last state to the game
         current_game.append(state)
 
         # add the last game to the results list
         results.append(current_game)
 
-        for agent in agents:
-            if agent.learns:
-                agent.memorize(current_game)
-                if iteration > agent.batch_size * 2:
-                    agent.learn()
+        agent.memorize(current_game)
+        if iteration  - start > agent.batch_size:
+            agent.learn()
 
         if log:
             reward = get_winner(state)
             total_reward += reward
             if reward > 0:
                 won += 1
-            # games_started += 1 if played_first else 0
 
             if iteration % print_every == 0:
                 print('won ' + str(won) + ' out of ' + str(print_every) + ' games')
@@ -86,36 +75,8 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
 
                 total_reward = 0
                 won = 0
-             #  games_started = 0
 
             if backup and iteration % print_every == 0:
-                for agent in agents:
-                    if agent.learns:
-                        agent.model.save('model_' + str(iteration) + '.h5')
+                agent.model.save('models/model_' + str(iteration) + '.h5')
 
-    return agents[0], results
-
-
-def save_q(agent):
-    pickle_file = 'learning_agent.pickle'
-
-    dataset = {'learningagent': agent.Q}
-
-    with open(pickle_file, 'wb') as picklefile:
-        pickle.dump(dataset, picklefile, pickle.HIGHEST_PROTOCOL)
-    picklefile.close()
-
-
-def parse_game(current_game, last_state, gamma):
-    # clean results for game
-    clean_game = []
-
-    turns = len(current_game)
-    reward = get_winner(last_state)
-
-    for i, turn in enumerate(current_game):
-        turn['r'] = gamma ** (turns - i - 1) * reward
-
-        clean_game.append(turn)
-
-    return clean_game
+    return agent, results

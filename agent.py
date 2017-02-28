@@ -1,38 +1,12 @@
 import numpy as np
 import random
-from environment import get_valid_moves, make_move, get_winner, get_initial_state
+from environment import get_valid_moves, make_move, get_winner
 from collections import deque
 from model import create_model
 
 
-def get_winner_grid(state, tile):
-    winner_grid = get_initial_state()
-    for action in get_valid_moves(state):
-        new_state = make_move(state, action, tile)
-        if get_winner(new_state) == tile:
-            for i in reversed(range(6)):
-                if state[i][action] == 0:
-                    winner_grid[i][action] = 1
-                    break
-    return winner_grid
-
-
 def parse_state(state):
-    #winner_grid = get_winner_grid(state, tile)
-    #grid = [state, winner_grid]
-    #parsed_state = np.array(grid).transpose((1, 2, 0))
-    #return parsed_state.reshape((1, 6, 7, 2))
-    return np.array(state).reshape((1, 6, 7, 1))
-
-
-def parse_action(action):
-    p_action = np.zeros((1, 7))
-    p_action[0][action] = 1
-    return p_action
-
-
-def parse_tile(tile):
-    return np.array([tile])
+    return np.array(state).reshape((1, 42))
 
 
 class Agent:
@@ -112,15 +86,15 @@ class LearningAgent(Agent):
     def __init__(self,
                  tile=None,
                  alpha=0.5,
-                 gamma=0.9,
+                 gamma=0.75,
                  memory=100,
                  model=create_model(),
                  batch_size=32,
-                 exploration_rate=0.25):
+                 exploration_rate=0):
 
         Agent.__init__(self, tile)
-        self.learns = True
 
+        self.learns = True
         self.Q = deque([], memory)
         self.alpha = alpha
         self.gamma = gamma
@@ -132,10 +106,13 @@ class LearningAgent(Agent):
         self.Q.append(game)
 
     def learn(self):
+        # select the games to learn
         games = random.sample(self.Q, self.batch_size)
 
+        # initialize input and target variables to train
         states = []
         values = []
+
         for turns in games:
             for i in range(1, len(turns)):
                 st0 = parse_state(turns[i-1])
@@ -145,10 +122,11 @@ class LearningAgent(Agent):
                 pt1 = self.model.predict(st1)[0][0]
 
                 if i == len(turns) - 1:
-                    reward = get_winner(turns[i])
-                    p = pt0 + self.alpha * (reward + self.gamma * pt1 - pt0)
+                    reward = 1 if get_winner(turns[i]) == self.tile else 0
+
+                    p = reward
                 else:
-                    p = pt0 + self.alpha * (self.gamma * pt1 - pt0)
+                    p = self.gamma * pt1
 
                 states.append(st0[0])
                 values.append(p)
@@ -159,20 +137,25 @@ class LearningAgent(Agent):
         self.model.train_on_batch(states, values)
 
     def get_action(self, state):
+        # take random action with probability given by exploration rate
         if random.random() < self.exploration_rate:
             action = Agent.get_action(self, state)
             return action
 
-        valid_actions = get_valid_moves(state)
         max_value = - float('inf')
         max_action = None
-        for action in valid_actions:
+
+        # iterate over the valid actions
+        for action in get_valid_moves(state):
+            # simulate the action and get the value for that state
             new_state = make_move(state, action, self.tile)
             parsed_new_state = parse_state(new_state)
             value_new_state = self.model.predict(parsed_new_state)[0][0]
 
+            # check if the current action has the highest value
             if value_new_state > max_value:
                 max_value = value_new_state
                 max_action = action
 
+        # return the action with the highest value
         return max_action
