@@ -132,29 +132,29 @@ class LearningAgent(Agent):
         self.Q.append(game)
 
     def learn(self):
-        games = random.sample(self.Q, self.batch_size)
+        sample_size = min(len(self.Q), self.batch_size)
+        turns = random.sample(self.Q, sample_size)
 
         states = []
         values = []
-        for turns in games:
-            for i in range(len(turns)):
-                st0 = parse_state(turns[i]['st0'])
-                action = turns[i]['a']
-                p = self.model.predict(st0)[0]
+        for i in range(len(turns)):
+            st0 = parse_state(turns[i]['st0'])
+            action = turns[i]['a']
+            p = self.model.predict(st0)[0]
 
-                # if terminal state
-                if i == len(turns) - 1:
-                    reward = get_winner(turns[i]['st1'])
-                    #reward = 1 if get_winner(turns[i]['st1']) == self.tile else 0
-                    p[action] = reward
-                else:
-                    st1 = parse_state(turns[i]['st1'])
-                    q_sa = np.max(self.model.predict(st1)[0])
+            # if terminal state
+            if turns[i]['r']:
+                reward = turns[i]['r']
+                #reward = 1 if get_winner(turns[i]['st1']) == self.tile else 0
+                p[action] = reward
+            else:
+                st1 = parse_state(turns[i]['st1'])
+                q_sa = np.max(self.model.predict(st1)[0])
 
-                    p[action] = self.gamma * q_sa
+                p[action] = self.gamma * q_sa
 
-                states.append(st0[0])
-                values.append(p)
+            states.append(st0[0])
+            values.append(p)
 
         states = np.array(states)
         values = np.array(values)

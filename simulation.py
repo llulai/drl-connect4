@@ -1,46 +1,35 @@
-from agent import Agent
+from agent import Agent, IntelligentAgent, LearningAgent
 from itertools import cycle
 from environment import get_initial_state, game_over, make_move, get_winner
 from random import randrange
 import pickle
 
 
-def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup=False, print_every=10):
+def simulate(agent=LearningAgent(), sparring=IntelligentAgent(), opponent=Agent(), iterations=10, log=True, backup=False, print_every=10):
     
     # if the agents are not passed
     # create dumb agents
-    for i in range(len(agents)):
-        if not agents[i]:
-            agents[i] = Agent(tiles[i])
-        else:
-            agents[i].set_tile(tiles[i])
+    agent.set_tile(1)
+    sparring.set_tile(-1)
 
     # create an iterator for alternate players
-    players = cycle(agents)
+    players = cycle([agent, sparring])
 
     # initialize list to return
-    results = []
     won = 0
-    games_started = 0
     total_reward = 0
 
     # run n simulations
     for iteration in range(1, iterations + 1):
-        # print('iteration ' + str(iteration) + ' of ' + str(iterations))
 
         # get an empty board
         state = get_initial_state()
-
-        # initialize the list for this game
-        current_game = []
 
         # randomize the first agent to play
         for _ in range(randrange(1, 3)):
             current_player = next(players)
         
         # play until the game is over
-
-        played_first =  current_player.tile == 1
 
         while not game_over(state):
 
@@ -58,22 +47,14 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
             
             # if the current player is agent 1
             # add the current turn to the list
-            if current_player.tile == 1:
-                turn = {'a': action, 'st0': initial_state, 'st1': state}
-                current_game.append(turn)
+            if current_player.learns:
+                r = get_winner(state)
+                turn = {'a': action, 'st0': initial_state, 'st1': state, 'r': r}
+                current_player.memorize(turn)
+                current_player.learn()
 
-        #current_game = parse_game(current_game, state, 0.9)
-        #current_game.append(state)
-        current_game[-1]['st1'] = state
 
-        # add the last game to the results list
-        results.append(current_game)
-
-        for agent in agents:
-            if agent.learns:
-                agent.memorize(current_game)
-                if iteration > agent.batch_size:
-                    agent.learn()
+        #TODO learn over epochs against itself and then test against ia
 
         if log:
             reward = get_winner(state)
@@ -88,11 +69,9 @@ def simulate(agents=[None, None], iterations=10, tiles=[1, -1], log=True, backup
 
                 total_reward = 0
                 won = 0
-             #  games_started = 0
 
             if backup and iteration % print_every == 0:
-                for agent in agents:
-                    if agent.learns:
-                        agent.model.save('models/model_deep_q_learning.h5')
+                if agent.learns:
+                    agent.model.save('models/model_deep_q_learning.h5')
 
-    return agents[0], results
+    return agent

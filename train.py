@@ -24,17 +24,23 @@ def main():
 
     la = LearningAgent(tile=1,
                        batch_size=10,
-                       memory=50,
+                       memory=1000,
                        model=model,
                        alpha=0.5,
                        gamma=0.9,
                        exploration_rate=.05)
 
-    la
+    la2 = LearningAgent(tile=-1,
+                        batch_size=10,
+                        memory=1000,
+                        model=model,
+                        alpha=0.5,
+                        gamma=0.9,
+                        exploration_rate=.05)
 
-    agents = [la, IntelligentAgent(-1, 1)]
+    ia = IntelligentAgent(-1, 1)
 
-    simulate(agents=agents, iterations=1000, log=True, print_every=100, backup=True)
+    simulate(agent=la, sparring=la2, opponent=ia, iterations=1000, log=True, print_every=100, backup=True)
 
 if __name__ == '__main__':
     main()
