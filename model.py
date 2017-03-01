@@ -1,6 +1,5 @@
 from keras.models import Model
 from keras.layers import Input, Dense
-import keras.backend as K
 from keras.optimizers import RMSprop
 
 
@@ -11,7 +10,7 @@ def create_model(lr=.001):
     cnn = Dense(64, init='normal', activation='sigmoid')(cnn)
     cnn = Dense(32, init='normal', activation='sigmoid')(cnn)
 
-    value = Dense(1, init='normal', activation='sigmoid')(cnn)
+    value = Dense(1, init='normal', activation='tanh')(cnn)
 
     model = Model(input=main_input, output=value)
 

@@ -1,4 +1,4 @@
-from agent import IntelligentAgent, LearningAgent
+from agent import Agent, IntelligentAgent, LearningAgent
 from keras.models import load_model
 from model import create_model
 from simulation import simulate
@@ -8,23 +8,36 @@ def main():
     # SETTINGS
 
     try:
-        model = load_model('models/model_1000.h5')
+        model_la = load_model('models/agent.h5')
     except:
-        model = create_model()
+        model_la = create_model(lr=0.001)
 
-    model = create_model()
+    try:
+        model_sp = load_model('models/sparring.h5')
+    except:
+        model_sp = create_model(lr=0.001)
 
-    la = LearningAgent(tile=1,
+    model_la.optimizer.lr.assign(0.00001)
+
+    la = LearningAgent(tiles=(1, -1),
                        batch_size=1,
                        memory=1,
-                       model=model,
-                       alpha=0.5,
+                       model=model_la,
                        gamma=0.9,
-                       exploration_rate=0)
+                       exploration_rate=.3)
 
-    ia = IntelligentAgent(-1, 1)
+    sp = LearningAgent(tiles=(-1, 1),
+                       batch_size=1,
+                       memory=1,
+                       model=model_sp,
+                       gamma=0.9,
+                       exploration_rate=.3)
 
-    simulate(agent=la, opponent=ia, iterations=1000, start=1000, log=True, print_every=100, backup=False)
+    ia = IntelligentAgent((-1, 1))
+
+    a = Agent((-1, 1))
+
+    simulate(agent=la, sparring=ia, opponent=ia, iterations=1000, log=True, print_every=100, backup=True)
 
 if __name__ == '__main__':
     main()
