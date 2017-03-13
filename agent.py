@@ -31,9 +31,9 @@ class Agent:
     def get_tile(self):
         return self._tile
 
-    def set_tiles(self, (tile, opponent)):
-        self._tile = tile
-        self._opponent = opponent
+    def set_tiles(self, tiles=(None, None)):
+        self._tile = tiles[0]
+        self._opponent = tiles[1]
 
 
 class IntelligentAgent(Agent):
