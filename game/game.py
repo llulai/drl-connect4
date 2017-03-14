@@ -12,7 +12,8 @@ class Game:
         self.SCREEN = pygame.display.set_mode((650, 560))
         self.game_over = False
         self.text_writer = TextWriter('../font/corpus.png', self.SCREEN)
-        self.menu = Menu()
+        self.main_menu = Menu(('start_game', 'dificulty', 'exit'))
+        self.end_menu = Menu(('play_again', 'back_to_main_menu'))
         self.board = get_initial_state()
         self.current_player = None
 
@@ -41,8 +42,8 @@ class Game:
         self.text_writer.write('start game', (100, 100))
         self.text_writer.write('dificulty easy', (100, 150))
         self.text_writer.write('exit', (100, 200))
-        if self.menu.active_arrow:
-            row = 100 + self.menu.current_option * 50
+        if self.main_menu.active_arrow:
+            row = 100 + self.main_menu.current_option * 50
             self.text_writer.write('>', (85, row))
 
     def start(self):
@@ -66,7 +67,7 @@ class Game:
         self.agent = IntelligentAgent((-1, 1))
 
     def game_loop(self):
-        if self.current_player == 'computer':
+        if self.current_player == 'computer' and not game_over(self.board):
             action = self.agent.get_action(self.board)
             self.board = make_move(self.board, action, -1)
             self.current_player = next(self.players)
@@ -84,9 +85,29 @@ class Game:
                         self.board = make_move(self.board, action, 1)
                         self.current_player = next(self.players)
 
+            else:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_DOWN:
+                        self.end_menu.select_next_option()
+                    elif event.key == pygame.K_UP:
+                        self.end_menu.select_previous_option()
+                    elif event.key == pygame.K_RETURN:
+                        selected_option = self.end_menu.items[self.end_menu.current_option]
+                        if selected_option == 'play_again':
+                            self.__start_game()
+                        elif selected_option == 'back_to_main_menu':
+                            self.current_loop = 'menu'
+
+        if self.frame % 12 == 0:
+            self.end_menu.active_arrow = not self.end_menu.active_arrow
+            self.frame = 0
+
+        self.frame += 1
+
         self.print_board()
 
     def get_action(self):
+        #TODO change proportion, is not right anymore
         x, y = pygame.mouse.get_pos()
         return int(x / 100)
 
@@ -109,6 +130,10 @@ class Game:
 
             self.text_writer.write('play again', (150, 200))
             self.text_writer.write('back to main menu', (150, 250))
+            if self.end_menu.active_arrow:
+                row = 200 + self.end_menu.current_option * 50
+                self.text_writer.write('>', (135, row))
+
 
         pygame.display.update()
         self.clock.tick(24)
@@ -127,13 +152,13 @@ class Game:
                 self.game_over = True
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_DOWN:
-                    self.menu.select_next_option()
+                    self.main_menu.select_next_option()
                 elif event.key == pygame.K_UP:
-                    self.menu.select_previous_option()
+                    self.main_menu.select_previous_option()
 
                 if event.key == pygame.K_RETURN:
 
-                    selected_option = self.menu.options[self.menu.current_option]
+                    selected_option = self.main_menu.items[self.main_menu.current_option]
 
                     if selected_option == 'start_game':
                         self.__start_game()
@@ -142,7 +167,7 @@ class Game:
                         self.game_over = True
 
         if self.frame % 12 == 0:
-            self.menu.active_arrow = not self.menu.active_arrow
+            self.main_menu.active_arrow = not self.main_menu.active_arrow
             self.frame = 0
 
         self.print_menu()
