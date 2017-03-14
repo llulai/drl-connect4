@@ -2,26 +2,31 @@ import pygame
 from itertools import cycle
 from text_writer import TextWriter
 from environment import get_initial_state, make_move, game_over, get_winner
-from agent import IntelligentAgent
+from agent import Agent, IntelligentAgent, LearningAgent
+from model import create_model
+
+from keras.models import load_model
 
 from menu import Menu
+
+DIFFICULTIES = ['easy', 'medium', 'hard']
 
 
 class Game:
     def __init__(self):
         self.SCREEN = pygame.display.set_mode((650, 560))
         self.game_over = False
-        self.text_writer = TextWriter('../font/corpus.png', self.SCREEN)
-        self.main_menu = Menu(('start_game', 'dificulty', 'exit'))
+        self.text_writer = TextWriter('font/corpus.png', self.SCREEN)
+        self.main_menu = Menu(('start_game', 'difficulty', 'exit'))
         self.end_menu = Menu(('play_again', 'back_to_main_menu'))
         self.board = get_initial_state()
         self.current_player = None
 
-        self.board_image = pygame.image.load('board.png').convert()
+        self.board_image = pygame.image.load('game/board.png').convert()
 
         self.tiles = {
-            'yellow': pygame.image.load('tile-yellow.png').convert(),
-            'red': pygame.image.load('tile-red.png').convert(),
+            'yellow': pygame.image.load('game/tile-yellow.png').convert(),
+            'red': pygame.image.load('game/tile-red.png').convert(),
         }
 
         self.COLORS = {
@@ -35,12 +40,13 @@ class Game:
         self. clock = pygame.time.Clock()
         self.frame = 0
         self.current_loop = 'menu'
+        self.difficulty = DIFFICULTIES[0]
 
     def print_menu(self):
         self.SCREEN.fill(self.COLORS['white'])
         self.text_writer.font_size = 3
         self.text_writer.write('start game', (100, 100))
-        self.text_writer.write('dificulty easy', (100, 150))
+        self.text_writer.write('difficulty: ' + self.difficulty, (100, 150))
         self.text_writer.write('exit', (100, 200))
         if self.main_menu.active_arrow:
             row = 100 + self.main_menu.current_option * 50
@@ -64,7 +70,26 @@ class Game:
 
         self.players = cycle(['human', 'computer'])
         self.current_player = next(self.players)
-        self.agent = IntelligentAgent((-1, 1))
+        if self.difficulty == DIFFICULTIES[0]:
+            self.agent = Agent((-1, 1))
+        elif self.difficulty == DIFFICULTIES[1]:
+            self.agent = IntelligentAgent((-1, 1))
+        elif self.difficulty == DIFFICULTIES[2]:
+            try:
+                model = load_model('models/agent.h5')
+            except:
+                model = create_model(lr=0.001)
+
+            self.agent = LearningAgent((-1, 1), model=model)
+
+    def __decrease_difficulty(self):
+        index = DIFFICULTIES.index(self.difficulty)
+        self.difficulty = DIFFICULTIES[index - 1]
+
+    def __increase_difficulty(self):
+        index = DIFFICULTIES.index(self.difficulty)
+        self.difficulty = DIFFICULTIES[index + 1]
+
 
     def game_loop(self):
         if self.current_player == 'computer' and not game_over(self.board):
@@ -92,7 +117,7 @@ class Game:
                     elif event.key == pygame.K_UP:
                         self.end_menu.select_previous_option()
                     elif event.key == pygame.K_RETURN:
-                        selected_option = self.end_menu.items[self.end_menu.current_option]
+                        selected_option = self.end_menu.get_selected_option()
                         if selected_option == 'play_again':
                             self.__start_game()
                         elif selected_option == 'back_to_main_menu':
@@ -107,9 +132,13 @@ class Game:
         self.print_board()
 
     def get_action(self):
-        #TODO change proportion, is not right anymore
         x, y = pygame.mouse.get_pos()
-        return int(x / 100)
+        if 10 < x <= 640:
+            return int(x / 90)
+        elif x <= 10:
+            return 0
+        elif x >= 640:
+            return 6
 
     def print_board(self):
         self.SCREEN.fill(self.COLORS['white'])
@@ -134,7 +163,6 @@ class Game:
                 row = 200 + self.end_menu.current_option * 50
                 self.text_writer.write('>', (135, row))
 
-
         pygame.display.update()
         self.clock.tick(24)
 
@@ -158,13 +186,24 @@ class Game:
 
                 if event.key == pygame.K_RETURN:
 
-                    selected_option = self.main_menu.items[self.main_menu.current_option]
+                    selected_option = self.main_menu.get_selected_option()
 
                     if selected_option == 'start_game':
                         self.__start_game()
                         self.current_loop = 'game'
                     elif selected_option == 'exit':
                         self.game_over = True
+
+                if event.key == pygame.K_LEFT:
+                    print('decrease difficulty')
+                    selected_option = self.main_menu.get_selected_option()
+                    if selected_option == 'difficulty':
+                        self.__decrease_difficulty()
+                if event.key == pygame.K_RIGHT:
+                    print('increase difficulty')
+                    selected_option = self.main_menu.get_selected_option()
+                    if selected_option == 'difficulty':
+                        self.__increase_difficulty()
 
         if self.frame % 12 == 0:
             self.main_menu.active_arrow = not self.main_menu.active_arrow

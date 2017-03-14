@@ -46,6 +46,8 @@ class TextWriter(object):
             '8': self.__get_letter_at((162, 0, 5, 7)),
             '9': self.__get_letter_at((167, 0, 5, 7)),
             '0': self.__get_letter_at((172, 0, 5, 7)),
+            '?': self.__get_letter_at((177, 0, 4, 7)),
+            ':': self.__get_letter_at((182, 0, 2, 7)),
             ' ': self.__get_letter_at((184, 0, 3, 7)),
             '>': self.__get_letter_at((186, 0, 4, 7)),
         }

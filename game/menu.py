@@ -17,3 +17,6 @@ class Menu:
             self.current_option = options - 1
         else:
             self.current_option -= 1
+
+    def get_selected_option(self):
+        return self.items[self.current_option]
