@@ -42,7 +42,7 @@ def simulate(agent=LearningAgent(),
             test_players = cycle([agent, opponent])
 
             # play 100 games
-            for i in range(100):
+            for i in range(1):
                 test_game = play_game(test_players)
                 reward = get_winner(test_game[-1])
 

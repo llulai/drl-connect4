@@ -1,4 +1,4 @@
-from agent import Agent, IntelligentAgent, LearningAgent
+from agent import Agent, IntelligentAgent, LearningAgent, SearchAgent
 from keras.models import load_model
 from model import create_model
 from simulation import simulate
@@ -36,8 +36,9 @@ def main():
     ia = IntelligentAgent((-1, 1))
 
     a = Agent((-1, 1))
+    sa = SearchAgent(tiles=(1, -1), depth=2)
 
-    simulate(agent=la, sparring=ia, opponent=ia, iterations=1000, log=True, print_every=100, backup=True)
+    simulate(agent=sa, sparring=ia, opponent=ia, iterations=10, log=False, print_every=1, backup=False)
 
 if __name__ == '__main__':
     main()
