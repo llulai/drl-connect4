@@ -8,28 +8,23 @@ def main():
     # SETTINGS
 
     try:
-        model_la = load_model('models/agent.h5')
+        model = load_model('models/agent.h5')
     except:
-        model_la = create_model(lr=0.001)
+        model = create_model(lr=0.001)
 
-    try:
-        model_sp = load_model('models/sparring.h5')
-    except:
-        model_sp = create_model(lr=0.001)
-
-    model_la.optimizer.lr.assign(0.00001)
+    model.optimizer.lr.assign(0.00001)
 
     la = LearningAgent(tiles=(1, -1),
                        batch_size=1,
                        memory=1,
-                       model=model_la,
+                       model=model,
                        gamma=0.9,
                        exploration_rate=.3)
 
     sp = LearningAgent(tiles=(-1, 1),
                        batch_size=1,
                        memory=1,
-                       model=model_sp,
+                       model=model,
                        gamma=0.9,
                        exploration_rate=.3)
 
@@ -37,7 +32,7 @@ def main():
 
     a = Agent((-1, 1))
 
-    simulate(agent=la, sparring=ia, opponent=ia, iterations=1000, log=True, print_every=100, backup=True)
+    simulate(agent=la, sparring=sp, opponent=ia, iterations=10000, log=True, print_every=1000, backup=True)
 
 if __name__ == '__main__':
     main()

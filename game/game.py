@@ -4,9 +4,7 @@ from text_writer import TextWriter
 from environment import get_initial_state, make_move, game_over, get_winner
 from agent import Agent, IntelligentAgent, LearningAgent
 from model import create_model
-
 from keras.models import load_model
-
 from menu import Menu
 
 DIFFICULTIES = ['easy', 'medium', 'hard']
@@ -21,6 +19,7 @@ class Game:
         self.end_menu = Menu(('play_again', 'back_to_main_menu'))
         self.board = get_initial_state()
         self.current_player = None
+        self.image_counter = 0
 
         self.board_image = pygame.image.load('game/board.png').convert()
 
@@ -42,7 +41,7 @@ class Game:
         self.current_loop = 'menu'
         self.difficulty = DIFFICULTIES[0]
 
-    def print_menu(self):
+    def __print_menu(self):
         self.SCREEN.fill(self.COLORS['white'])
         self.text_writer.font_size = 3
         self.text_writer.write('start game', (100, 100))
@@ -58,9 +57,12 @@ class Game:
 
         while not self.game_over:
             if self.current_loop == 'menu':
-                self.menu_loop()
+                self.__menu_loop()
             elif self.current_loop == 'game':
-                self.game_loop()
+                self.__game_loop()
+
+            pygame.image.save(self.SCREEN, 'images/output-' + str(self.image_counter) + '.png')
+            self.image_counter += 1
 
         pygame.quit()
         quit()
@@ -90,8 +92,7 @@ class Game:
         index = DIFFICULTIES.index(self.difficulty)
         self.difficulty = DIFFICULTIES[index + 1]
 
-
-    def game_loop(self):
+    def __game_loop(self):
         if self.current_player == 'computer' and not game_over(self.board):
             action = self.agent.get_action(self.board)
             self.board = make_move(self.board, action, -1)
@@ -129,7 +130,7 @@ class Game:
 
         self.frame += 1
 
-        self.print_board()
+        self.__print_board()
 
     def get_action(self):
         x, y = pygame.mouse.get_pos()
@@ -140,14 +141,15 @@ class Game:
         elif x >= 640:
             return 6
 
-    def print_board(self):
+    def __print_board(self):
+        print('print board')
         self.SCREEN.fill(self.COLORS['white'])
         w, h = self.SCREEN.get_size()
         img = pygame.transform.scale(self.board_image, (w, h))
         self.SCREEN.blit(img, (0, 0))
         for row in range(len(self.board)):
             for col in range(len(self.board[row])):
-                self.print_tile(row, col)
+                self.__print_tile(row, col)
 
         if game_over(self.board):
             pygame.draw.rect(self.SCREEN, self.COLORS['black'], (100, 100, 450, 270))
@@ -166,14 +168,14 @@ class Game:
         pygame.display.update()
         self.clock.tick(24)
 
-    def print_tile(self, row, col):
+    def __print_tile(self, row, col):
         tile = self.board[row][col]
         if tile:
             img = self.tiles['red'] if tile == -1 else self.tiles['yellow']
             img = pygame.transform.scale(img, (70, 70))
             self.SCREEN.blit(img, (20 + col * 90, 20 + row * 90))
 
-    def menu_loop(self):
+    def __menu_loop(self):
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -195,12 +197,10 @@ class Game:
                         self.game_over = True
 
                 if event.key == pygame.K_LEFT:
-                    print('decrease difficulty')
                     selected_option = self.main_menu.get_selected_option()
                     if selected_option == 'difficulty':
                         self.__decrease_difficulty()
                 if event.key == pygame.K_RIGHT:
-                    print('increase difficulty')
                     selected_option = self.main_menu.get_selected_option()
                     if selected_option == 'difficulty':
                         self.__increase_difficulty()
@@ -209,7 +209,7 @@ class Game:
             self.main_menu.active_arrow = not self.main_menu.active_arrow
             self.frame = 0
 
-        self.print_menu()
+        self.__print_menu()
         pygame.display.update()
         self.clock.tick(24)
         self.frame += 1

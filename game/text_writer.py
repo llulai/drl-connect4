@@ -78,8 +78,3 @@ class TextWriter(object):
         h *= self.font_size
         current_pos = (current_pos[0] + w, current_pos[1])
         return current_pos
-
-    def set(self, options):
-        pass
-        #try:
-        #    self.font_size = options['font_size']

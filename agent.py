@@ -6,7 +6,7 @@ from model import create_model
 
 
 def parse_state(state):
-    return np.array(state).reshape((1, 42))
+    return np.array(state).flatten()
 
 
 class Agent:

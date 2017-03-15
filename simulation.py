@@ -60,9 +60,6 @@ def simulate(agent=LearningAgent(),
                 if agent.learns:
                     agent.model.save('models/agent.h5')
 
-                if sparring.learns:
-                    sparring.model.save('models/sparring.h5')
-
     return agent, results
 
 
