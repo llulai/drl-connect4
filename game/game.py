@@ -2,31 +2,32 @@ import pygame
 from itertools import cycle
 from text_writer import TextWriter
 from environment import get_initial_state, make_move, game_over, get_winner
-from agent import Agent, IntelligentAgent, LearningAgent
+from agent import Agent, IntelligentAgent, LearningAgent, SearchAgent
 from model import create_model
+import time
 
 from keras.models import load_model
 
 from menu import Menu
 
-DIFFICULTIES = ['easy', 'medium', 'hard']
+DIFFICULTIES = ['easy', 'medium', 'hard', 'extreme']
 
 
 class Game:
     def __init__(self):
         self.SCREEN = pygame.display.set_mode((650, 560))
         self.game_over = False
-        self.text_writer = TextWriter('font/corpus.png', self.SCREEN)
+        self.text_writer = TextWriter('../font/corpus.png', self.SCREEN)
         self.main_menu = Menu(('start_game', 'difficulty', 'exit'))
         self.end_menu = Menu(('play_again', 'back_to_main_menu'))
         self.board = get_initial_state()
         self.current_player = None
 
-        self.board_image = pygame.image.load('game/board.png').convert()
+        self.board_image = pygame.image.load('board.png').convert()
 
         self.tiles = {
-            'yellow': pygame.image.load('game/tile-yellow.png').convert(),
-            'red': pygame.image.load('game/tile-red.png').convert(),
+            'yellow': pygame.image.load('tile-yellow.png').convert(),
+            'red': pygame.image.load('tile-red.png').convert(),
         }
 
         self.COLORS = {
@@ -82,6 +83,9 @@ class Game:
 
             self.agent = LearningAgent((-1, 1), model=model)
 
+        elif self.difficulty == DIFFICULTIES[3]:
+            self.agent = SearchAgent(tiles=(-1, 1), depth=2)
+
     def __decrease_difficulty(self):
         index = DIFFICULTIES.index(self.difficulty)
         self.difficulty = DIFFICULTIES[index - 1]
@@ -89,7 +93,6 @@ class Game:
     def __increase_difficulty(self):
         index = DIFFICULTIES.index(self.difficulty)
         self.difficulty = DIFFICULTIES[index + 1]
-
 
     def game_loop(self):
         if self.current_player == 'computer' and not game_over(self.board):
@@ -195,12 +198,10 @@ class Game:
                         self.game_over = True
 
                 if event.key == pygame.K_LEFT:
-                    print('decrease difficulty')
                     selected_option = self.main_menu.get_selected_option()
                     if selected_option == 'difficulty':
                         self.__decrease_difficulty()
                 if event.key == pygame.K_RIGHT:
-                    print('increase difficulty')
                     selected_option = self.main_menu.get_selected_option()
                     if selected_option == 'difficulty':
                         self.__increase_difficulty()

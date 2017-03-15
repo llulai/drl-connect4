@@ -57,14 +57,14 @@ def get_winner(state):
             if state[y][x] == state[y+1][x] == state[y+2][x] == state[y+3][x] != 0:
                 return state[y][x]
 
-    # check / diagonal
+    # check \ diagonal
     for x in range(width - 3):
         for y in range(height - 3):
             if state[y][x] == state[y+1][x+1] == state[y+2][x+2] == state[y+3][x+3] != 0:
                 return state[y][x]
 
-    # check \ diagonal
-    for x in range(3, width - 3):
+    # check / diagonal
+    for x in range(3, width):
         for y in range(height - 3):
             if state[y][x] == state[y+1][x-1] == state[y+2][x-2] == state[y+3][x-3] != 0:
                 return state[y][x]
