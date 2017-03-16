@@ -4,7 +4,6 @@ from text_writer import TextWriter
 from environment import get_initial_state, make_move, game_over, get_winner
 from agent import Agent, IntelligentAgent, LearningAgent, SearchAgent
 from model import create_model
-import time
 
 from keras.models import load_model
 

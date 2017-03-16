@@ -17,7 +17,7 @@ def main():
     except:
         model_sp = create_model(lr=0.001)
 
-    model_la.optimizer.lr.assign(0.00001)
+    model_la.optimizer.lr.assign(0.005)
 
     la = LearningAgent(tiles=(1, -1),
                        batch_size=1,
@@ -36,9 +36,9 @@ def main():
     ia = IntelligentAgent((-1, 1))
 
     a = Agent((-1, 1))
-    sa = SearchAgent(tiles=(1, -1), depth=2)
+    sa = SearchAgent(tiles=(-1, 1), depth=2)
 
-    simulate(agent=sa, sparring=ia, opponent=ia, iterations=10, log=False, print_every=1, backup=False)
+    simulate(agent=la, sparring=sp, opponent=ia, iterations=1000, log=True, print_every=100, backup=True)
 
 if __name__ == '__main__':
     main()

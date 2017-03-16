@@ -42,7 +42,7 @@ def simulate(agent=LearningAgent(),
             test_players = cycle([agent, opponent])
 
             # play 100 games
-            for i in range(1):
+            for i in range(100):
                 test_game = play_game(test_players)
                 reward = get_winner(test_game[-1])
 
@@ -56,12 +56,12 @@ def simulate(agent=LearningAgent(),
             print('won ' + str(won) + ' out of 100 games')
             print('reward: ' + str(total_reward))
 
-            if backup:
-                if agent.learns:
-                    agent.model.save('models/agent.h5')
+        if backup:
+            if agent.learns:
+                agent.model.save('models/agent.h5')
 
-                if sparring.learns:
-                    sparring.model.save('models/sparring.h5')
+            if sparring.learns:
+                sparring.model.save('models/sparring.h5')
 
     return agent, results
 
