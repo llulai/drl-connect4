@@ -17,7 +17,7 @@ def main():
     except:
         model_sp = create_model(lr=0.001)
 
-    model_la.optimizer.lr.assign(0.005)
+    model_la.optimizer.lr.assign(0.001)
 
     la = LearningAgent(tiles=(1, -1),
                        batch_size=1,
