@@ -2,8 +2,11 @@ import numpy as np
 import random
 from environment import get_valid_moves, make_move, get_winner
 from collections import deque
-from model import create_model
+from model import create_model, actor_model, critic_model
 import operator
+from keras.models import load_model
+from keras import backend as k
+import tensorflow as tf
 
 
 def parse_state(state):
@@ -84,18 +87,30 @@ class LearningAgent(Agent):
                  tiles=(None, None),
                  gamma=0.75,
                  memory=100,
-                 model=create_model(),
+                 model=None,
                  batch_size=32,
-                 exploration_rate=0):
+                 exploration_rate=0,
+                 file_name='models/agent.h5'):
 
         Agent.__init__(self, tiles)
 
         self.learns = True
         self.Q = deque([], memory)
         self.gamma = gamma
-        self.model = model
+
         self.batch_size = batch_size
         self.exploration_rate = exploration_rate
+        self.file_name = file_name
+
+        if model:
+            self.model = model
+        else:
+            try:
+                self.model = load_model(self.file_name)
+                print('read model ' + self.file_name)
+            except:
+                self.model = create_model()
+                print('created new model: ' + self.file_name)
 
     def memorize(self, game):
         self.Q.append(game)
@@ -155,6 +170,9 @@ class LearningAgent(Agent):
         # return the action with the highest value
         return max_action
 
+    def save(self):
+        self.model.save(self.file_name)
+
 
 class SearchAgent(Agent):
     def __init__(self, depth=1, tiles=(None, None)):
@@ -199,4 +217,117 @@ class SearchAgent(Agent):
         return values
 
 
+class ActorCriticAgent(Agent):
+    def __init__(self,
+                 tiles=(None, None),
+                 actor=actor_model(),
+                 critic=critic_model(),
+                 alpha=.5,
+                 beta=.5,
+                 gamma=.9,
+                 exploration_rate=.3):
+
+        # call parent constructor
+        Agent.__init__(self, tiles=tiles)
+
+        # create actor model
+        self.actor = actor
+        # create critic model
+        self.critic = critic
+
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.learns = True
+        self.er = exploration_rate
+
+    def get_action(self, state):
+        if random.random() < self.er:
+            return Agent.get_action(self, state)
+
+        parsed_state = parse_state(state)
+        predicted_actions = list(self.actor.predict(parsed_state)[0].argsort())
+
+        valid_actions = get_valid_moves(state)
+        for i in range(7):
+            index = predicted_actions.index(i)
+            if index in valid_actions:
+                return index
+
+    def learn(self, game):
+        parsed_game = self.__parse_game(game)
+        i = 1
+
+        for turn in parsed_game:
+
+            parsed_st0 = parse_state(turn['st0'])
+            p0 = self.critic.predict(parsed_st0)[0][0]
+
+            try:
+                parsed_st1 = parse_state(turn['st1'])
+                p1 = self.critic.predict(parsed_st1)[0][0]
+                r = 0
+            except KeyError:
+                p1 = 0
+                r = get_winner(parsed_game[-1]['f_st'])
+
+            delta = r + self.gamma * p1 - p0
+
+            # get the gradients
+            weights = self.critic.trainable_weights
+            output = self.critic.output
+
+            critic_grad_func = k.gradients(output, weights)
+
+            sess = tf.InteractiveSession()
+            sess.run(tf.global_variables_initializer())
+            critic_grad = sess.run(critic_grad_func, feed_dict={self.critic.input:parsed_st0})
+            # end get the gradients
+
+            # update weights
+            w = np.array(self.critic.get_weights())
+            w += self.beta * delta * np.array(critic_grad)
+            self.critic.set_weights(w)
+
+            # get the gradients
+            weights = self.actor.trainable_weights
+            output = self.actor.output
+
+            actor_grad_func = k.gradients(output, weights)
+
+            sess = tf.InteractiveSession()
+            sess.run(tf.global_variables_initializer())
+            actor_grad = sess.run(actor_grad_func, feed_dict={self.actor.input: parsed_st0})
+            # end get gradients
+
+            # update weights
+            theta = self.actor.get_weights()
+            theta += self.alpha * i * delta * np.array(actor_grad)
+            self.actor.set_weights(theta)
+
+            i *= self.gamma
+
+    def __parse_game(self, game):
+        parsed_game = []
+        for i, turn in enumerate(game):
+            if turn['p'] == self._tile:
+                parsed_turn = {
+                    'st0': turn['st'],
+                    'a': turn['a']
+                }
+
+                try:
+                    parsed_turn['st1'] = game[int(i+2)]['st']
+                except IndexError:
+                    parsed_turn['f_st'] = game[-1]['f_st']
+                except KeyError:
+                    parsed_turn['f_st'] = game[-1]['f_st']
+
+                parsed_game.append(parsed_turn)
+
+        return parsed_game
+
+    def save(self):
+        self.actor.save('models/actor.h5')
+        self.critic.save('models/critic.h5')
 

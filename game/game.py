@@ -1,7 +1,7 @@
 import pygame
 from itertools import cycle
 from text_writer import TextWriter
-from environment import get_initial_state, make_move, game_over, get_winner
+from environment import get_initial_state, make_move, game_over, get_winner, get_valid_moves
 from agent import Agent, IntelligentAgent, LearningAgent, SearchAgent
 from model import create_model
 import time
@@ -10,24 +10,24 @@ from keras.models import load_model
 
 from menu import Menu
 
-DIFFICULTIES = ['easy', 'medium', 'hard', 'extreme']
+DIFFICULTIES = ['easy', 'medium', 'hard', 'extreme', 'transfer']
 
 
 class Game:
     def __init__(self):
         self.SCREEN = pygame.display.set_mode((650, 560))
         self.game_over = False
-        self.text_writer = TextWriter('../font/corpus.png', self.SCREEN)
+        self.text_writer = TextWriter('font/corpus.png', self.SCREEN)
         self.main_menu = Menu(('start_game', 'difficulty', 'exit'))
         self.end_menu = Menu(('play_again', 'back_to_main_menu'))
         self.board = get_initial_state()
         self.current_player = None
 
-        self.board_image = pygame.image.load('board.png').convert()
+        self.board_image = pygame.image.load('game/board.png').convert()
 
         self.tiles = {
-            'yellow': pygame.image.load('tile-yellow.png').convert(),
-            'red': pygame.image.load('tile-red.png').convert(),
+            'yellow': pygame.image.load('game/tile-yellow.png').convert(),
+            'red': pygame.image.load('game/tile-red.png').convert(),
         }
 
         self.COLORS = {
@@ -84,7 +84,7 @@ class Game:
             self.agent = LearningAgent((-1, 1), model=model)
 
         elif self.difficulty == DIFFICULTIES[3]:
-            self.agent = SearchAgent(tiles=(-1, 1), depth=2)
+            self.agent = SearchAgent(tiles=(-1, 1), depth=3)
 
     def __decrease_difficulty(self):
         index = DIFFICULTIES.index(self.difficulty)
@@ -108,8 +108,9 @@ class Game:
 
                 if event.type == pygame.MOUSEBUTTONUP:
                     action = self.get_action()
+                    valid_actions = get_valid_moves(self.board)
 
-                    if self.current_player == 'human':
+                    if self.current_player == 'human' and action in valid_actions:
                         self.board = make_move(self.board, action, 1)
                         self.current_player = next(self.players)
 
