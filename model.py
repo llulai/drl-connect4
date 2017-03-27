@@ -1,63 +1,83 @@
-from keras.models import Model
+from keras.models import Model, load_model
 from keras.layers import Input, Dense
-from keras.optimizers import RMSprop
+from keras import backend as k
+import numpy as np
 
 
-def create_model(lr=.001):
+def create_model():
+    main_input = Input(shape=42)
+    layer = Dense(512, init='normal', activation='sigmoid')(main_input)
+    output = Dense(7, init='normal', activation='softmax')(layer)
+    model = Model(input=main_input, output=output)
 
+    return main_input, output, model
+
+
+def create_actor():
     main_input = Input(shape=(42,))
-    cnn = Dense(128, init='normal', activation='sigmoid')(main_input)
-    cnn = Dense(64, init='normal', activation='sigmoid')(cnn)
-    cnn = Dense(32, init='normal', activation='sigmoid')(cnn)
+    layer = Dense(128, activation='relu')(main_input)
+    layer = Dense(64, activation='relu')(layer)
+    layer = Dense(32, activation='relu')(layer)
+    output = Dense(7, activation='softmax')(layer)
+    model = Model(input=main_input, output=output)
 
-    value = Dense(1, init='normal', activation='tanh')(cnn)
-
-    model = Model(input=main_input, output=value)
-
-    model.compile(optimizer=RMSprop(lr=lr), loss='mse')
-
-    return model
+    return main_input, output, model
 
 
-def complex_model(lr=.001):
+def create_critic():
     main_input = Input(shape=(42,))
-    cnn = Dense(512, init='normal', activation='sigmoid')(main_input)
-    cnn = Dense(512, init='normal', activation='sigmoid')(cnn)
+    layer = Dense(128, activation='relu')(main_input)
+    layer = Dense(64, activation='relu')(layer)
+    layer = Dense(32, activation='relu')(layer)
+    output = Dense(1)(layer)
+    model = Model(input=main_input, output=output)
 
-    value = Dense(1, init='normal', activation='tanh')(cnn)
-
-    model = Model(input=main_input, output=value)
-
-    model.compile(optimizer=RMSprop(lr=lr), loss='mse')
-
-    return model
+    return main_input, output, model
 
 
-def actor_model(lr=.001):
-    main_input = Input(shape=(42,))
-    cnn = Dense(128, init='normal', activation='sigmoid')(main_input)
-    cnn = Dense(64, init='normal', activation='sigmoid')(cnn)
-    cnn = Dense(32, init='normal', activation='sigmoid')(cnn)
+class BaseModel(object):
+    def __init__(self, session, model_func=None):
+        self.input, output, self.model = model_func or create_model()
+        self.grad_func = k.gradients(output, self.model.weights)
+        self.sess = session
 
-    value = Dense(7, init='normal', activation='softmax')(cnn)
+    def get_gradient(self, parsed_state):
+        return np.array(self.sess.run(self.grad_func, feed_dict={self.input: parsed_state}))
 
-    model = Model(input=main_input, output=value)
+    def predict(self, parsed_state):
+        return self.model.predict(parsed_state)
 
-    model.compile(optimizer=RMSprop(lr=lr), loss='mse')
+    def get_weights(self):
+        return self.model.get_weights()
 
-    return model
+    def set_weights(self, w):
+        self.model.set_weights(w)
+
+    def save(self, filename):
+        self.model.save(filename)
+
+    def load(self, filename):
+        self.model = load_model(filename)
 
 
-def critic_model(lr=.001):
-    main_input = Input(shape=(42,))
-    cnn = Dense(128, init='normal', activation='sigmoid')(main_input)
-    cnn = Dense(64, init='normal', activation='sigmoid')(cnn)
-    cnn = Dense(32, init='normal', activation='sigmoid')(cnn)
+class ActorModel(BaseModel):
+    def __init__(self, session):
+        BaseModel.__init__(self, session=session, model_func=create_actor())
 
-    value = Dense(1, init='normal')(cnn)
+    #def get_gradient(self, parsed_state, action):
+    #    parsed_action = np.zeros((1, 7))
+    #    parsed_action[0][action] = 1#
+    #
+    #    return self.sess.run(self.grad_func,
+    #                         feed_dict={
+    #                             self.input: parsed_state,
+    #                             self.model.output: parsed_action
+    #                         })
 
-    model = Model(input=main_input, output=value)
 
-    model.compile(optimizer=RMSprop(lr=lr), loss='mse')
+class CriticModel(BaseModel):
+    def __init__(self, session):
+        BaseModel.__init__(self, session=session, model_func=create_critic())
 
-    return model
+    #def get_gradient(self, parsed_state):
+    #    return self.sess.run(self.grad_func, feed_dict={self.input: parsed_state})

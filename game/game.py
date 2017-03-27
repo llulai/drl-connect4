@@ -2,7 +2,7 @@ import pygame
 from itertools import cycle
 from text_writer import TextWriter
 from environment import get_initial_state, make_move, game_over, get_winner, get_valid_moves
-from agent import Agent, IntelligentAgent, LearningAgent, SearchAgent
+from agent import Agent, SearchAgent
 from model import create_model
 import time
 
@@ -74,15 +74,9 @@ class Game:
         if self.difficulty == DIFFICULTIES[0]:
             self.agent = Agent((-1, 1))
         elif self.difficulty == DIFFICULTIES[1]:
-            self.agent = IntelligentAgent((-1, 1))
+            self.agent = SearchAgent(tiles=(-1, 1), depth=1)
         elif self.difficulty == DIFFICULTIES[2]:
-            try:
-                model = load_model('models/agent.h5')
-            except:
-                model = create_model(lr=0.001)
-
-            self.agent = LearningAgent((-1, 1), model=model)
-
+            self.agent = SearchAgent(tiles=(-1, 1), depth=2)
         elif self.difficulty == DIFFICULTIES[3]:
             self.agent = SearchAgent(tiles=(-1, 1), depth=3)
 

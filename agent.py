@@ -1,11 +1,8 @@
 import numpy as np
 import random
 from environment import get_valid_moves, make_move, get_winner
-from collections import deque
-from model import create_model, actor_model, critic_model
+from model import ActorModel, CriticModel
 import operator
-from keras.models import load_model
-from keras import backend as k
 import tensorflow as tf
 
 
@@ -40,142 +37,8 @@ class Agent:
         self._opponent = tiles[1]
 
 
-class IntelligentAgent(Agent):
-    """it is a basic intelligent agent that follows this strategy
-       1- if there is a move that makes it win, take it
-       2- if the opponent has a winning move, block it
-       3- take random action"""
-
-    def __init__(self, tiles=(None, None)):
-        """
-        :param tiles: Tile to be used by the agent when playing the game
-        """
-        # call parent init
-        Agent.__init__(self, tiles=tiles)
-
-    def get_action(self, state):
-        """
-        :param state : (list) 6x7 list representing the current state of the game
-        :return int: Index of the column to put the piece (always checks for valid moves)
-        """
-
-        # get all possible moves
-        possible_actions = get_valid_moves(state)
-
-        # check if it has a winning move
-        for action in possible_actions:
-            simulated_state = make_move(state, action, tile=self._tile)
-            # if the simulated next state is a winning game
-            if get_winner(simulated_state) == self._tile:
-                # take the action
-                return action
-
-        # check if the opponent has a winning move
-        for action in possible_actions:
-            simulated_state = make_move(state, action, tile=self._opponent)
-            # if the simulated state is a loosing game
-            if get_winner(simulated_state) == self._opponent:
-                # block that move
-                return action
-
-        # otherwise take random action
-        return Agent.get_action(self, state)
-
-
-class LearningAgent(Agent):
-    def __init__(self,
-                 tiles=(None, None),
-                 gamma=0.75,
-                 memory=100,
-                 model=None,
-                 batch_size=32,
-                 exploration_rate=0,
-                 file_name='models/agent.h5'):
-
-        Agent.__init__(self, tiles)
-
-        self.learns = True
-        self.Q = deque([], memory)
-        self.gamma = gamma
-
-        self.batch_size = batch_size
-        self.exploration_rate = exploration_rate
-        self.file_name = file_name
-
-        if model:
-            self.model = model
-        else:
-            try:
-                self.model = load_model(self.file_name)
-                print('read model ' + self.file_name)
-            except:
-                self.model = create_model()
-                print('created new model: ' + self.file_name)
-
-    def memorize(self, game):
-        self.Q.append(game)
-
-    def learn(self):
-        sample_size = min(len(self.Q), self.batch_size)
-
-        # select the games to learn
-        games = random.sample(self.Q, sample_size)
-
-        # initialize input and target variables to train
-        states = []
-        values = []
-
-        for turns in games:
-            for i in range(1, len(turns)):
-                st0 = parse_state(turns[i-1])
-
-                if i == len(turns) - 1:
-                    # if the agent won, reward is 1, if lose -1 and if draw = 0
-                    p = get_winner(turns[i]) * self._tile
-
-                else:
-                    st1 = parse_state(turns[i])
-                    pt1 = self.model.predict(st1)[0][0]
-                    p = self.gamma * pt1
-
-                states.append(st0[0])
-                values.append(p)
-
-        states = np.array(states)
-        values = np.array(values)
-
-        self.model.train_on_batch(states, values)
-
-    def get_action(self, state):
-        # take random action with probability given by exploration rate
-        if random.random() < self.exploration_rate:
-            action = Agent.get_action(self, state)
-            return action
-
-        max_value = - float('inf')
-        max_action = None
-
-        # iterate over the valid actions
-        for action in get_valid_moves(state):
-            # simulate the action and get the value for that state
-            new_state = make_move(state, action, self._tile)
-            parsed_new_state = parse_state(new_state)
-            value_new_state = self.model.predict(parsed_new_state)[0][0]
-
-            # check if the current action has the highest value
-            if value_new_state > max_value:
-                max_value = value_new_state
-                max_action = action
-
-        # return the action with the highest value
-        return max_action
-
-    def save(self):
-        self.model.save(self.file_name)
-
-
 class SearchAgent(Agent):
-    def __init__(self, depth=1, tiles=(None, None)):
+    def __init__(self, tiles=(None, None), depth=1):
         self.depth = depth
         Agent.__init__(self, tiles=tiles)
 
@@ -220,25 +83,26 @@ class SearchAgent(Agent):
 class ActorCriticAgent(Agent):
     def __init__(self,
                  tiles=(None, None),
-                 actor=actor_model(),
-                 critic=critic_model(),
-                 alpha=.5,
-                 beta=.5,
+                 alpha=.001,
+                 beta=.001,
                  gamma=.9,
                  exploration_rate=.3):
 
         # call parent constructor
         Agent.__init__(self, tiles=tiles)
+        self.learns = True
 
+        self.sess = tf.InteractiveSession()
+        self.sess.run(tf.global_variables_initializer())
         # create actor model
-        self.actor = actor
+        self.actor = ActorModel(session=self.sess)
+
         # create critic model
-        self.critic = critic
+        self.critic = CriticModel(session=self.sess)
 
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
-        self.learns = True
         self.er = exploration_rate
 
     def get_action(self, state):
@@ -247,6 +111,7 @@ class ActorCriticAgent(Agent):
 
         parsed_state = parse_state(state)
         predicted_actions = list(self.actor.predict(parsed_state)[0].argsort())
+        #print(predicted_actions)
 
         valid_actions = get_valid_moves(state)
         for i in range(7):
@@ -270,35 +135,24 @@ class ActorCriticAgent(Agent):
             except KeyError:
                 p1 = 0
                 r = get_winner(parsed_game[-1]['f_st'])
+                #print(r)
 
             delta = r + self.gamma * p1 - p0
+            #print('p0:', p0)
+            #print('p1:', p1)
+            #print('delta:', delta)
 
             # get the gradients
-            weights = self.critic.trainable_weights
-            output = self.critic.output
-
-            critic_grad_func = k.gradients(output, weights)
-
-            sess = tf.InteractiveSession()
-            sess.run(tf.global_variables_initializer())
-            critic_grad = sess.run(critic_grad_func, feed_dict={self.critic.input:parsed_st0})
-            # end get the gradients
+            critic_grad = self.critic.get_gradient(parsed_st0)
 
             # update weights
             w = np.array(self.critic.get_weights())
-            w += self.beta * delta * np.array(critic_grad)
+            assert w.shape == critic_grad.shape
+            w += np.dot(np.multiply(self.beta, delta), critic_grad)
             self.critic.set_weights(w)
 
             # get the gradients
-            weights = self.actor.trainable_weights
-            output = self.actor.output
-
-            actor_grad_func = k.gradients(output, weights)
-
-            sess = tf.InteractiveSession()
-            sess.run(tf.global_variables_initializer())
-            actor_grad = sess.run(actor_grad_func, feed_dict={self.actor.input: parsed_st0})
-            # end get gradients
+            actor_grad = self.actor.get_gradient(parsed_st0)
 
             # update weights
             theta = self.actor.get_weights()

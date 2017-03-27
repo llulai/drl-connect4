@@ -1,4 +1,3 @@
-from agent import Agent, LearningAgent
 from itertools import cycle
 from environment import get_initial_state, game_over, make_move, get_winner
 from random import randrange
@@ -55,6 +54,7 @@ def simulate(agent=None,
             for i in range(100):
                 test_game = play_game(test_players)
                 reward = get_winner(test_game[-1]['f_st'])
+                #print(reward)
 
                 total_reward += reward
 
@@ -101,6 +101,8 @@ def play_game(players):
 
         # add the current turn to the list
         current_game.append(turn)
+        if current_player.get_tile() == 1:
+            pass
 
     # add last state to the game
     current_game.append({'f_st': state, 'p':0})
