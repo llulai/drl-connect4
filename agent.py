@@ -86,7 +86,9 @@ class LearningAgent(Agent):
                  memory=100,
                  model=create_model(),
                  batch_size=32,
-                 exploration_rate=0):
+                 exploration_rate=0,
+                 search_width=1,
+                 search_depth=3):
 
         Agent.__init__(self, tiles)
 
@@ -96,6 +98,8 @@ class LearningAgent(Agent):
         self.model = model
         self.batch_size = batch_size
         self.exploration_rate = exploration_rate
+        self.search_width = search_width
+        self.search_depth = search_depth
 
     def memorize(self, game):
         self.Q.append(game)
@@ -155,6 +159,35 @@ class LearningAgent(Agent):
         # return the action with the highest value
         return max_action
 
+    def get_value_action(self, state, look=0):
+        if look == 0:
+            return {0: 0}
+        valid_moves = get_valid_moves(state)
+        values = []
+
+        for move in range(len(valid_moves)):
+            new_state = make_move(state, valid_moves[move], self._tile)
+            parsed_new_state = parse_state(new_state)
+            values[valid_moves[move]] = self.model.predict(parsed_new_state)[0][0]
+
+            max(values.items(), key=operator.itemgetter(1))[0]
+
+            if get_winner(new_state) == self._tile:
+                values[valid_moves[move]] = 1
+                break
+            else:
+                opponent_moves = get_valid_moves(new_state)
+                for opponent_move in range(len(opponent_moves)):
+                    last_state = make_move(new_state, opponent_moves[opponent_move], self._opponent)
+                    if get_winner(last_state) == self._opponent:
+                        values[valid_moves[move]] = -1
+                        break
+                    else:
+                        results = self.get_value_action(last_state, look=look - 1).values()
+                        values[valid_moves[move]] += sum(results) / 49.
+
+        return values
+
 
 class SearchAgent(Agent):
     def __init__(self, depth=1, tiles=(None, None)):
@@ -175,7 +208,8 @@ class SearchAgent(Agent):
     def get_value_action(self, state, look=1):
 
         if look == 0:
-            return {0:0}
+            return {0: 0}
+
         valid_moves = get_valid_moves(state)
         values = {}
 
@@ -197,6 +231,3 @@ class SearchAgent(Agent):
                         values[valid_moves[move]] += sum(results) / 49.
 
         return values
-
-
-
