@@ -2,6 +2,7 @@ from agent import Agent, LearningAgent
 from itertools import cycle
 from environment import get_initial_state, game_over, make_move, get_winner
 from random import randrange
+import tensorflow as tf
 
 
 def simulate(agent=LearningAgent(),
@@ -24,44 +25,48 @@ def simulate(agent=LearningAgent(),
     results = []
 
     # run n simulations
-    for iteration in range(1, iterations + 1):
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        agent.sess = sess
+        for iteration in range(1, iterations + 1):
 
-        # play one game
-        current_game = play_game(players)
+            # play one game
+            current_game = play_game(players)
 
-        # train players
-        train(agent, current_game)
-        train(sparring, current_game)
+            # train players
+            train(agent, current_game)
+            train(sparring, current_game)
 
-        if log and iteration % print_every == 0:
-            # initialize stats variables
-            old_er = agent.exploration_rate
-            agent.exploration_rate = 0
-            won = 0
-            total_reward = 0
-            test_players = cycle([agent, opponent])
+            if log and iteration % print_every == 0:
+                # initialize stats variables
+                old_er = agent.exploration_rate
+                agent.exploration_rate = 0
+                won = 0
+                total_reward = 0
+                test_players = cycle([agent, opponent])
 
-            # play 100 games
-            for i in range(100):
-                test_game = play_game(test_players)
-                reward = get_winner(test_game[-1])
+                # play 100 games
+                for i in range(100):
+                    test_game = play_game(test_players)
+                    reward = get_winner(test_game[-1])
 
-                total_reward += reward
+                    total_reward += reward
 
-                if reward > 0:
-                    won += 1
+                    if reward > 0:
+                        won += 1
 
-            agent.exploration_rate = old_er
+                agent.exploration_rate = old_er
 
-            print('won ' + str(won) + ' out of 100 games')
-            print('reward: ' + str(total_reward))
+                print('won ' + str(won) + ' out of 100 games')
+                print('reward: ' + str(total_reward))
 
-        if backup:
-            if agent.learns:
-                agent.model.save('models/agent.h5')
+            if backup:
+                pass
+                #if agent.learns:
+                #    agent.model.save('models/agent.h5')
 
-            if sparring.learns:
-                sparring.model.save('models/sparring.h5')
+                #if sparring.learns:
+                #    sparring.model.save('models/sparring.h5')
 
     return agent, results
 

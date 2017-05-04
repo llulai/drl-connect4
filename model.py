@@ -1,21 +1,22 @@
-from keras.models import Model
-from keras.layers import Input, Dense
-from keras.optimizers import RMSprop
+import tensorflow as tf
 
 
 def create_model(lr=.001):
+    input_ = tf.placeholder(tf.float32, shape=(None, 42))
+    label_ = tf.placeholder(tf.float32, shape=(None, 1))
 
-    main_input = Input(shape=(42,))
-    cnn = Dense(32, init='normal', activation='relu')(main_input)
-    cnn = Dense(64, init='normal', activation='relu')(cnn)
-    cnn = Dense(128, init='normal', activation='relu')(cnn)
+    dnn = tf.layers.dense(input_, 32, activation=tf.nn.relu)
+    dnn = tf.layers.dense(dnn, 64, activation=tf.nn.relu)
+    dnn = tf.layers.dense(dnn, 128, activation=tf.nn.relu)
+    dnn = tf.layers.dense(dnn, 512, activation=tf.nn.relu)
+    dnn = tf.layers.dense(dnn, 512, activation=tf.nn.relu)
 
-    value = Dense(512, init='normal', activation='relu')(cnn)
-    value = Dense(512, init='normal', activation='relu')(value)
-    value = Dense(1, init='normal', activation='tanh')(value)
+    logits = tf.layers.dense(dnn, 1, activation=None)
 
-    model = Model(input=main_input, output=value)
+    out = tf.nn.sigmoid(logits)
 
-    model.compile(optimizer=RMSprop(lr=lr), loss='mse')
+    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=label_))
 
-    return model
+    optimizer = tf.train.AdamOptimizer(lr).minimize(cost)
+
+    return input_, label_, logits, out, cost, optimizer

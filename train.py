@@ -1,5 +1,4 @@
 from agent import Agent, IntelligentAgent, LearningAgent, SearchAgent
-from keras.models import load_model
 from model import create_model
 from simulation import simulate
 
@@ -16,8 +15,6 @@ def main():
         model_sp = load_model('models/sparring.h5')
     except:
         model_sp = create_model(lr=0.001)
-
-    model_la.optimizer.lr.assign(0.001)
 
     la = LearningAgent(tiles=(1, -1),
                        batch_size=1,
@@ -38,7 +35,7 @@ def main():
     a = Agent((-1, 1))
     sa = SearchAgent(tiles=(-1, 1), depth=2)
 
-    simulate(agent=la, sparring=sa, opponent=ia, iterations=1000, log=True, print_every=100, backup=True)
+    simulate(agent=la, sparring=sa, opponent=a, iterations=1000, log=True, print_every=1, backup=True)
 
 if __name__ == '__main__':
     main()
