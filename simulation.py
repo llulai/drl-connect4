@@ -138,3 +138,40 @@ def get_random_player(players):
         current_player = next(players)
 
     return current_player
+
+
+def test_games(agent, opponent, games=100):
+    players = cycle([agent, opponent])
+
+    won_games = 0
+    total_reward = 0
+
+    saver = tf.train.Saver()
+
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+
+        if agent.learns:
+            agent.sess = sess
+
+            load_model(sess, saver)
+
+        for i in range(games):
+            game = parse_game(play_game(players), agent.get_tile())
+            winner = get_winner(game[-1])
+
+            if winner == 1:
+                won_games += 1
+
+            total_reward += winner
+
+        print('won {} out of {} games'.format(won_games, games))
+        print('reward: {}'.format(total_reward))
+
+
+# TODO: check if file exists first
+def load_model(session, saver):
+    try:
+        saver.restore(session, 'models/agent.ckpt')
+    except:
+        pass
