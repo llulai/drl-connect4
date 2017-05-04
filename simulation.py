@@ -65,7 +65,8 @@ def simulate(agent=LearningAgent(),
                 # play 100 games
                 for i in range(100):
                     test_game = play_game(test_players)
-                    reward = get_winner(test_game[-1])
+                    parsed_game = parse_game(test_game, agent.get_tile())
+                    reward = get_winner(parsed_game[-1])
 
                     total_reward += reward
 
@@ -86,9 +87,21 @@ def simulate(agent=LearningAgent(),
 
 def train(agent, current_game):
     # train the agent
+    parsed_game = parse_game(current_game, agent.get_tile())
     if agent.learns:
-        agent.memorize(current_game)
+        agent.memorize(parsed_game)
         agent.learn()
+
+
+def parse_game(game, player):
+    parsed_game = []
+    for turn in game:
+        if turn['player'] == player:
+            parsed_game.append(turn['state'])
+
+    parsed_game.append(game[-1]['state'])
+
+    return parsed_game
 
 
 def play_game(players):
@@ -110,10 +123,10 @@ def play_game(players):
         state = make_move(state, action, current_player.get_tile())
 
         # add the current turn to the list
-        current_game.append(initial_state)
+        current_game.append({'state': initial_state, 'player': current_player.get_tile()})
 
     # add last state to the game
-    current_game.append(state)
+    current_game.append({'state': state, 'player': current_player.get_tile()})
 
     return current_game
 

@@ -137,12 +137,12 @@ class LearningAgent(Agent):
         values = []
 
         for turns in games:
-            for i in range(1, len(turns)):
+            for i in range(1, len(turns) - 1):
                 st0 = parse_state(turns[i-1])
 
-                if i == len(turns) - 1:
+                if i == len(turns) - 2:
                     # if the agent won, reward is 1, if lose -1 and if draw = 0
-                    p = get_winner(turns[i]) * self._tile
+                    p = get_winner(turns[-1]) * self._tile
 
                 else:
                     st1 = parse_state(turns[i])
