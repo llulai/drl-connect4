@@ -11,7 +11,7 @@ Model = namedtuple('model', ['input_', 'label_', 'logits', 'out', 'cost', 'optim
 
 
 def parse_state(state):
-    return np.array(state).reshape((1, 42))
+    return np.array(state).reshape((1, 6, 7, 1))
 
 
 class Agent:

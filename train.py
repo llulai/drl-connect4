@@ -35,7 +35,7 @@ def main():
     a = Agent((-1, 1))
     sa = SearchAgent(tiles=(-1, 1), depth=2)
 
-    simulate(agent=la, sparring=sa, opponent=a, iterations=1000, log=True, print_every=1, backup=True)
+    simulate(agent=la, sparring=ia, opponent=ia, iterations=1000, log=True, print_every=100, backup=True)
 
 if __name__ == '__main__':
     main()

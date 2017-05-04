@@ -28,6 +28,9 @@ def simulate(agent=LearningAgent(),
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         agent.sess = sess
+
+        if sparring.learns:
+            sparring.sess = sess
         for iteration in range(1, iterations + 1):
 
             # play one game
