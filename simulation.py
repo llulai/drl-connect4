@@ -24,13 +24,27 @@ def simulate(agent=LearningAgent(),
     # initialize list to return
     results = []
 
+    # create the variable to save the model
+    saver = tf.train.Saver()
+
     # run n simulations
     with tf.Session() as sess:
+        # initialize variables
         sess.run(tf.global_variables_initializer())
+
+        # add the session to the agent so it can optimize
         agent.sess = sess
 
+        # read if there is a saved model
+        try:
+            saver.restore(sess, 'models/agent.ckpt')
+        except:
+            pass
+
+        # add the session to the sparring if it is a learning agent
         if sparring.learns:
             sparring.sess = sess
+
         for iteration in range(1, iterations + 1):
 
             # play one game
@@ -58,18 +72,14 @@ def simulate(agent=LearningAgent(),
                     if reward > 0:
                         won += 1
 
+                # reset to the old exploration rate
                 agent.exploration_rate = old_er
 
                 print('won ' + str(won) + ' out of 100 games')
                 print('reward: ' + str(total_reward))
 
             if backup:
-                pass
-                #if agent.learns:
-                #    agent.model.save('models/agent.h5')
-
-                #if sparring.learns:
-                #    sparring.model.save('models/sparring.h5')
+                saver.save(sess, 'models/agent.ckpt')
 
     return agent, results
 

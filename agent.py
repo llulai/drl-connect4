@@ -1,17 +1,28 @@
 import numpy as np
 import random
-from environment import get_valid_moves, make_move, get_winner
+from environment import get_valid_moves, make_move, get_winner, get_initial_state
 from collections import deque, namedtuple
 from model import create_model
 import operator
-import tensorflow as tf
 
 
-Model = namedtuple('model', ['input_', 'label_', 'logits', 'out', 'cost', 'optimizer'])
+Model = namedtuple('model', ['input_', 'label_', 'out', 'cost', 'optimizer'])
 
 
 def parse_state(state):
     return np.array(state).reshape((1, 6, 7, 1))
+
+
+def get_moves_positions(state):
+    moves_positions = get_initial_state()
+
+    for r in range(len(state)):
+        for c in reversed(range(len(state[r]))):
+            if state[r][c] != 0 and r > 0:
+                moves_positions[r-1][c] = 1
+                break
+
+    return moves_positions
 
 
 class Agent:
@@ -100,8 +111,8 @@ class LearningAgent(Agent):
         self.learns = True
         self.Q = deque([], memory)
         self.gamma = gamma
-        input_, label_, logits, out, cost, optimizer = model
-        self.model = Model(input_, label_, logits, out, cost, optimizer)
+        input_, label_, out, cost, optimizer = model
+        self.model = Model(input_, label_, out, cost, optimizer)
         self.batch_size = batch_size
         self.exploration_rate = exploration_rate
         self.search_width = search_width
@@ -131,7 +142,7 @@ class LearningAgent(Agent):
 
                 else:
                     st1 = parse_state(turns[i])
-                    pt1 = self.sess.run(self.model.out, feed_dict={self.model.input_:st1})
+                    pt1 = self.sess.run(self.model.out, feed_dict={self.model.input_: st1})
                     p = self.gamma * pt1
 
                 states.append(st0[0])
@@ -174,13 +185,6 @@ class SearchAgent(Agent):
 
     def get_action(self, state):
         values = self.get_value_action(state, self.depth)
-        try:
-            with open('training_examples.txt', 'a') as f:
-                f.write(str(state) + ';')
-                f.write(str(values) + '\n')
-        except IOError:
-            with open('training_examples.txt', 'w') as f:
-                f.write(str(values) + '\n')
         return max(values.items(), key=operator.itemgetter(1))[0]
 
     def get_value_action(self, state, look=1):
