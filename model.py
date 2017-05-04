@@ -3,7 +3,7 @@ import tensorflow as tf
 
 def create_model(lr=.001, model_name='model'):
     with tf.variable_scope(model_name):
-        input_ = tf.placeholder(tf.float32, shape=(None, 6, 7, 1), name='inputs')
+        input_ = tf.placeholder(tf.float32, shape=(None, 6, 7, 2), name='inputs')
         label_ = tf.placeholder(tf.float32, shape=(None, 1), name='values')
 
         # conv 1

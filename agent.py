@@ -10,7 +10,11 @@ Model = namedtuple('model', ['input_', 'label_', 'out', 'cost', 'optimizer'])
 
 
 def parse_state(state):
-    return np.array(state).reshape((1, 6, 7, 1))
+    moves_positions = get_moves_positions(state)
+    state = np.array(state)
+
+    stack = np.dstack((state, moves_positions))
+    return np.array(stack).reshape((1, 6, 7, 2))
 
 
 def get_moves_positions(state):
@@ -22,7 +26,7 @@ def get_moves_positions(state):
                 moves_positions[r-1][c] = 1
                 break
 
-    return moves_positions
+    return np.array(moves_positions)
 
 
 class Agent:
