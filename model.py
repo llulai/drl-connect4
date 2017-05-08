@@ -3,33 +3,15 @@ import tensorflow as tf
 
 def create_model(lr=.001, model_name='model'):
     with tf.variable_scope(model_name):
-        input_ = tf.placeholder(tf.float32, shape=(None, 6, 7, 2), name='inputs')
+        input_ = tf.placeholder(tf.float32, shape=(None, 42), name='inputs')
         label_ = tf.placeholder(tf.float32, shape=(None, 1), name='values')
 
-        # conv 1
-        cnn = tf.layers.conv2d(input_, 32, (3,3), activation=tf.nn.relu, padding='same', name='conv_1')
-        cnn = tf.layers.dropout(cnn, .5, name='drop_1')
-        cnn = tf.contrib.layers.batch_norm(cnn, 0.99)
-        cnn = tf.identity(cnn, name='batch_1')
-
-        # conv 2
-        cnn = tf.layers.conv2d(cnn, 64, (3,3), activation=tf.nn.relu, padding='same', name='conv_2')
-        cnn = tf.layers.dropout(cnn, .5, name='drop_2')
-        cnn = tf.contrib.layers.batch_norm(cnn, 0.99)
-        cnn = tf.identity(cnn, name='batch_2')
-
-        # conv 3
-        cnn = tf.layers.conv2d(cnn, 128, (3,3), activation=tf.nn.relu, padding='same', name='conv_3')
-        cnn = tf.layers.dropout(cnn, .5, name='drop_3')
-        cnn = tf.contrib.layers.batch_norm(cnn, 0.99)
-        cnn = tf.identity(cnn, name='batch_3')
-
-        # flatten the layers
-        cnn = tf.contrib.layers.flatten(cnn)
-
         # fully connected layers
-        cnn = tf.layers.dense(cnn, 512, activation=tf.nn.relu, name='fc_1')
+        cnn = tf.layers.dense(input_, 512, activation=tf.nn.relu, name='fc_1')
         cnn = tf.layers.dense(cnn, 512, activation=tf.nn.relu, name='fc_2')
+        #cnn = tf.layers.dropout(cnn, .5)
+        #cnn = tf.layers.dense(cnn, 512, activation=tf.nn.relu, name='fc_3')
+        #cnn = tf.layers.dropout(cnn, .5)
 
         # regression layer
         out = tf.layers.dense(cnn, 1, activation=tf.nn.tanh, name='out')

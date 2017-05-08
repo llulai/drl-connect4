@@ -7,16 +7,18 @@ import tensorflow as tf
 
 def simulate(agent=LearningAgent(),
              sparring=LearningAgent(),
-             opponent=Agent(),
+             opponents=[Agent()],
              iterations=10,
              log=True,
              backup=False,
-             print_every=10):
+             print_every=10,
+             n_test=100):
     
     # set tiles for agent and sparring
     agent.set_tiles((1, -1))
     sparring.set_tiles((-1, 1))
-    opponent.set_tiles((-1, 1))
+    for opponent in opponents:
+        opponent.set_tiles((-1, 1))
 
     # create an iterator for alternate players
     players = cycle([agent, sparring])
@@ -58,26 +60,50 @@ def simulate(agent=LearningAgent(),
                 # initialize stats variables
                 old_er = agent.exploration_rate
                 agent.exploration_rate = 0
-                won = 0
-                total_reward = 0
-                test_players = cycle([agent, opponent])
 
-                # play 100 games
-                for i in range(100):
-                    test_game = play_game(test_players)
-                    parsed_game = parse_game(test_game, agent.get_tile())
-                    reward = get_winner(parsed_game[-1])
+                for opponent in opponents:
+                    won = 0
+                    total_reward = 0
+                    test_players = cycle([agent, opponent])
 
-                    total_reward += reward
+                    started_played = 0
+                    started_won = 0
 
-                    if reward > 0:
-                        won += 1
+                    # play test games
+                    for i in range(n_test):
+                        game = play_game(test_players)
+                        first_player = game[0]['player']
+                        parsed_game = parse_game(game, agent.get_tile())
+                        reward = get_winner(parsed_game[-1])
+
+                        total_reward += reward
+
+                        if reward > 0:
+                            won += 1
+
+                        if first_player == 1:
+                            started_played +=1
+                            if reward > 0:
+                                started_won += 1
+
+                    print('won {} out of {} games against {} after {} iterations'.format(won,
+                                                                                         n_test,
+                                                                                         opponent.name,
+                                                                                         iteration))
+                    print('won {}% of the started games'.format(int(100 * (started_won / started_played))))
+                    print('stareted {} games'.format(started_played))
+                    print('reward: ' + str(total_reward))
+
+                    results.append({
+                        'won': won,
+                        'reward': total_reward,
+                        'iteration': iteration,
+                        'sparring': sparring.name,
+                        'opponent': opponent.name
+                    })
 
                 # reset to the old exploration rate
                 agent.exploration_rate = old_er
-
-                print('won ' + str(won) + ' out of 100 games')
-                print('reward: ' + str(total_reward))
 
             if backup:
                 saver.save(sess, 'models/agent.ckpt')

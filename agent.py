@@ -10,23 +10,7 @@ Model = namedtuple('model', ['input_', 'label_', 'out', 'cost', 'optimizer'])
 
 
 def parse_state(state):
-    moves_positions = get_moves_positions(state)
-    state = np.array(state)
-
-    stack = np.dstack((state, moves_positions))
-    return np.array(stack).reshape((1, 6, 7, 2))
-
-
-def get_moves_positions(state):
-    moves_positions = get_initial_state()
-
-    for r in range(len(state)):
-        for c in reversed(range(len(state[r]))):
-            if state[r][c] != 0 and r > 0:
-                moves_positions[r-1][c] = 1
-                break
-
-    return np.array(moves_positions)
+    return np.array(state).reshape((1, 42))
 
 
 class Agent:
@@ -40,6 +24,7 @@ class Agent:
         self._tile = tiles[0]
         self._opponent = tiles[1]
         self.learns = False
+        self.name = 'agent'
 
     def get_action(self, state):
         """
@@ -68,6 +53,7 @@ class IntelligentAgent(Agent):
         """
         # call parent init
         Agent.__init__(self, tiles=tiles)
+        self.name = 'intelligent_agent'
 
     def get_action(self, state):
         """
@@ -102,7 +88,6 @@ class LearningAgent(Agent):
     def __init__(self,
                  session=None,
                  tiles=(None, None),
-                 gamma=0.75,
                  memory=100,
                  model=create_model(),
                  batch_size=32,
@@ -114,7 +99,6 @@ class LearningAgent(Agent):
 
         self.learns = True
         self.Q = deque([], memory)
-        self.gamma = gamma
         input_, label_, out, cost, optimizer = model
         self.model = Model(input_, label_, out, cost, optimizer)
         self.batch_size = batch_size
@@ -122,6 +106,7 @@ class LearningAgent(Agent):
         self.search_width = search_width
         self.search_depth = search_depth
         self.sess = session
+        self.name = 'learning agent'
 
     def memorize(self, game):
         self.Q.append(game)
@@ -186,10 +171,14 @@ class SearchAgent(Agent):
     def __init__(self, depth=1, tiles=(None, None)):
         self.depth = depth
         Agent.__init__(self, tiles=tiles)
+        self.name = 'search {} agent'.format(self.depth)
 
     def get_action(self, state):
-        values = self.get_value_action(state, self.depth)
-        return max(values.items(), key=operator.itemgetter(1))[0]
+        if self.depth == 0:
+            return random.choice(get_valid_moves(state))
+        else:
+            values = self.get_value_action(state, self.depth)
+            return max(values.items(), key=operator.itemgetter(1))[0]
 
     def get_value_action(self, state, look=1):
 
