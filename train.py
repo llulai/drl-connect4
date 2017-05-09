@@ -3,9 +3,10 @@ from model import create_model
 from simulation import simulate
 
 import tensorflow as tf
+import pickle
 
 
-def main(model_name, memory, batch_size, exploration_rate, gamma):
+def main(model_name, memory, batch_size, exploration_rate, gamma, test_every, iterations):
     # reset for variable names
     tf.reset_default_graph()
 
@@ -25,30 +26,29 @@ def main(model_name, memory, batch_size, exploration_rate, gamma):
     opponents = [sa_0, sa_1]
     results = []
 
-    for opponent in opponents:
+    for i, opponent in enumerate(opponents, 1):
+        print('training {} of {} opponents'.format(i, len(opponents)))
 
         results += simulate(agent=learning_agent,
                             sparring=opponent,
                             opponents=opponents,
-                            iterations=10,
-                            log=True,
-                            print_every=1,
+                            iterations=iterations,
+                            test_every=test_every,
                             backup=False)
+
+    with open('logs/results.pkl', 'wb') as f:
+        pickle.dump(results, f)
 
     return results
 
-    # results must have
-    # iterations
-    # model against is trained
-    # model against is playing
-    # game
-    # reward
 
 if __name__ == '__main__':
-    model_name = 'conv_neural_network'
+    model_name = 'deep_neural_network'
     memory = 1
     batch_size = 1
     exploration_rate = .3
     gamma = .9
+    test_every = 100
+    iterations = 1000
 
-    main(model_name, memory, batch_size, exploration_rate, gamma)
+    main(model_name, memory, batch_size, exploration_rate, gamma, test_every, iterations)
