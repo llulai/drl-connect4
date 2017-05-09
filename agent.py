@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from environment import get_valid_moves, make_move, get_winner, get_initial_state
+from environment import get_valid_moves, make_move, get_winner
 from collections import deque, namedtuple
 from model import create_model
 import operator
@@ -41,49 +41,6 @@ class Agent:
         self._opponent = tiles[1]
 
 
-class IntelligentAgent(Agent):
-    """it is a basic intelligent agent that follows this strategy
-       1- if there is a move that makes it win, take it
-       2- if the opponent has a winning move, block it
-       3- take random action"""
-
-    def __init__(self, tiles=(None, None)):
-        """
-        :param tiles: Tile to be used by the agent when playing the game
-        """
-        # call parent init
-        Agent.__init__(self, tiles=tiles)
-        self.name = 'intelligent_agent'
-
-    def get_action(self, state):
-        """
-        :param state : (list) 6x7 list representing the current state of the game
-        :return int: Index of the column to put the piece (always checks for valid moves)
-        """
-
-        # get all possible moves
-        possible_actions = get_valid_moves(state)
-
-        # check if it has a winning move
-        for action in possible_actions:
-            simulated_state = make_move(state, action, tile=self._tile)
-            # if the simulated next state is a winning game
-            if get_winner(simulated_state) == self._tile:
-                # take the action
-                return action
-
-        # check if the opponent has a winning move
-        for action in possible_actions:
-            simulated_state = make_move(state, action, tile=self._opponent)
-            # if the simulated state is a loosing game
-            if get_winner(simulated_state) == self._opponent:
-                # block that move
-                return action
-
-        # otherwise take random action
-        return Agent.get_action(self, state)
-
-
 class LearningAgent(Agent):
     def __init__(self,
                  session=None,
@@ -92,21 +49,21 @@ class LearningAgent(Agent):
                  model=create_model(),
                  batch_size=32,
                  exploration_rate=0,
-                 search_width=1,
-                 search_depth=3):
+                 gamma=.9):
 
         Agent.__init__(self, tiles)
 
+        self.name = 'learning agent'
         self.learns = True
         self.Q = deque([], memory)
+
         input_, label_, out, cost, optimizer = model
         self.model = Model(input_, label_, out, cost, optimizer)
+        self.sess = session
+
         self.batch_size = batch_size
         self.exploration_rate = exploration_rate
-        self.search_width = search_width
-        self.search_depth = search_depth
-        self.sess = session
-        self.name = 'learning agent'
+        self.gamma = gamma
 
     def memorize(self, game):
         self.Q.append(game)
@@ -118,29 +75,33 @@ class LearningAgent(Agent):
         games = random.sample(self.Q, sample_size)
 
         # initialize input and target variables to train
-        states = []
-        values = []
+        inputs_ = []
+        labels_ = []
 
         for turns in games:
+            # if the last move was done by the agent, the last state is repeated
+            # otherwise the last state is the move from the opponent
             for i in range(1, len(turns) - 1):
                 st0 = parse_state(turns[i-1])
 
+                # if it is the terminal state
                 if i == len(turns) - 2:
                     # if the agent won, reward is 1, if lose -1 and if draw = 0
                     p = get_winner(turns[-1]) * self._tile
 
+                # if it is not the terminal state, get the next state predicted value
                 else:
                     st1 = parse_state(turns[i])
                     pt1 = self.sess.run(self.model.out, feed_dict={self.model.input_: st1})
                     p = self.gamma * pt1
 
-                states.append(st0[0])
-                values.append(p)
+                inputs_.append(st0[0])
+                labels_.append(p)
 
-        states = np.array(states)
-        values = np.array(values).reshape((len(values), 1))
+        inputs_ = np.array(inputs_)
+        labels_ = np.array(labels_).reshape((len(labels_), 1))
 
-        _ = self.sess.run(self.model.optimizer, feed_dict={self.model.input_: states, self.model.label_: values})
+        _ = self.sess.run(self.model.optimizer, feed_dict={self.model.input_: inputs_, self.model.label_: labels_})
 
     def get_action(self, state):
         # take random action with probability given by exploration rate

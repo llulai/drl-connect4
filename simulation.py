@@ -7,7 +7,7 @@ import tensorflow as tf
 
 def simulate(agent=LearningAgent(),
              sparring=LearningAgent(),
-             opponents=[Agent()],
+             opponents=None,
              iterations=10,
              log=True,
              backup=False,
@@ -52,11 +52,21 @@ def simulate(agent=LearningAgent(),
             # play one game
             current_game = play_game(players)
 
+            result = {'iteration': iteration,
+                      'sparring': sparring.name,
+                      'current_opponent': sparring.name,
+                      'game': _extract_games(current_game),
+                      'reward': get_winner(current_game[-1]['state']),
+                      'kind': 'training',
+                      'fist_player': current_game[0]['player']}
+
+            results.append(result)
+
             # train players
             train(agent, current_game)
             train(sparring, current_game)
 
-            if log and iteration % print_every == 0:
+            if iteration % print_every == 0:
                 # initialize stats variables
                 old_er = agent.exploration_rate
                 agent.exploration_rate = 0
@@ -76,31 +86,34 @@ def simulate(agent=LearningAgent(),
                         parsed_game = parse_game(game, agent.get_tile())
                         reward = get_winner(parsed_game[-1])
 
+                        result = {'iteration': iteration,
+                                  'sparring': sparring.name,
+                                  'current_opponent': opponent.name,
+                                  'game': _extract_games(game),
+                                  'reward': reward,
+                                  'kind': 'testing',
+                                  'fist_player': game[0]['player']}
+
+                        results.append(result)
+
                         total_reward += reward
 
                         if reward > 0:
                             won += 1
 
                         if first_player == 1:
-                            started_played +=1
+                            started_played += 1
                             if reward > 0:
                                 started_won += 1
+                    if log:
 
-                    print('won {} out of {} games against {} after {} iterations'.format(won,
-                                                                                         n_test,
-                                                                                         opponent.name,
-                                                                                         iteration))
-                    print('won {}% of the started games'.format(int(100 * (started_won / started_played))))
-                    print('stareted {} games'.format(started_played))
-                    print('reward: ' + str(total_reward))
-
-                    results.append({
-                        'won': won,
-                        'reward': total_reward,
-                        'iteration': iteration,
-                        'sparring': sparring.name,
-                        'opponent': opponent.name
-                    })
+                        print('won {} out of {} games against {} after {} iterations'.format(won,
+                                                                                             n_test,
+                                                                                             opponent.name,
+                                                                                             iteration))
+                        print('won {}% of the started games'.format(int(100. * started_won / started_played)))
+                        print('started {} games'.format(started_played))
+                        print('reward: ' + str(total_reward))
 
                 # reset to the old exploration rate
                 agent.exploration_rate = old_er
@@ -108,7 +121,11 @@ def simulate(agent=LearningAgent(),
             if backup:
                 saver.save(sess, 'models/agent.ckpt')
 
-    return agent, results
+    return results
+
+
+def _extract_games(game):
+    return [turn['state'] for turn in game]
 
 
 def train(agent, current_game):
